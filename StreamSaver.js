@@ -221,4 +221,4 @@
   }
 
   return streamSaver
-})
+});
