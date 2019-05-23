@@ -2,16 +2,17 @@
 // @name         微博 [ 图片 | 视频 ] 下载
 // @namespace    http://tampermonkey.net/
 // @version      1.0
-// @description  下载微博的图片和视频。（支持多图打包下载）
+// @description  下载微博的图片和视频。（支持LivePhoto、短视频、动/静图，可以打包下载）
 // @author       Mr.Po
 // @match        https://weibo.com/*
 // @match        https://www.weibo.com/*
-// @require      http://code.jquery.com/jquery-1.11.0.min.js
-// @require      https://stuk.github.io/jszip/dist/jszip.min.js
-// @require      https://raw.githubusercontent.com/eligrey/FileSaver.js/master/dist/FileSaver.min.js
+// @require      https://code.jquery.com/jquery-1.11.0.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.0/jszip.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js
 // @connect      sinaimg.cn
 // @connect      miaopai.com
 // @connect      youku.com
+// @connect      weibo.com
 // @grant        GM_notification
 // @grant        GM_setClipboard
 // @grant        GM_download
@@ -52,44 +53,35 @@
         }
     }
 
+
+
     /**
      * 处理图片，如果需要
      */
     function handlePictureIfNeed($ul) {
 
-        var $srcs = getPicSrc($ul);
+        // 得到大图片
+        var $links = getLargePhoto($ul);
 
         if (isDebug) {
-            console.log("此Item有图：" + $srcs.length);
+            console.log("此Item有图：" + $links.length);
         }
 
         // 判断图片是否存在
-        if ($srcs.length > 0) {
+        if ($links.length > 0) {
 
-            handleCopy($ul, $srcs);
+            var lp_links = getLivePhoto($ul);
 
-            handleDownload($ul, $srcs);
+            if (lp_links) {
+                $links = $($links.get().concat(lp_links));
+            }
 
-            handleDownloadZip($ul, $srcs);
+            handleCopy($ul, $links);
+
+            handleDownload($ul, $links);
+
+            handleDownloadZip($ul, $links);
         }
-    }
-
-    /**
-     * 得到视频类型
-     * @param  {$标签对象} $box 视频容器
-     * @return {字符串}      视频类型[video、live]
-     */
-    function getVideoType($box) {
-
-        // console.log($box);
-
-        // console.log($box.attr("action-data"));
-
-        var typeRegex = $box.attr("action-data").match(/type=feed(\w+)&/);
-
-        // console.log(typeRegex);
-
-        return typeRegex[1];
     }
 
     /**
@@ -98,10 +90,10 @@
      */
     function handleVideoIfNeed($ul) {
 
-        var $box = $ul.parents(".WB_feed_detail").find(".WB_video,.WB_video_a");
+        var $box = $ul.parents(".WB_feed_detail").find(".WB_video,.WB_video_a,.li_story");
 
         // 不存在视频
-        if($box.length===0){
+        if ($box.length === 0) {
             return;
         }
 
@@ -109,13 +101,17 @@
 
         var fun;
 
-        if (type === "video") { // 短视屏（秒拍、梨视频、优酷）
+        if (type === "feedvideo") { // 短视屏（秒拍、梨视频、优酷）
 
             fun = function() { downloadBlowVideo($box); };
 
-        } else if (type === "live") { // 直播回放
+        } else if (type === "feedlive") { // 直播回放
 
             //TODO 暂不支持
+
+        } else if (type === "story") { // 微博故事
+
+            fun = function() { downloadWeiboStory($box); };
 
         } else {
 
@@ -126,6 +122,50 @@
 
             putButton($ul, "下载当前视频", fun);
         }
+    }
+
+    /**
+     * 提取LivePhoto的地址
+     * @param  {$标签对象} $owner ul或li
+     * @return {字符串数组}       LivePhoto地址集，可能为null
+     */
+    function extractLivePhotoSrc($owner) {
+
+        var action_data = $owner.attr("action-data");
+
+        if (action_data) {
+
+            var urlsRegex = action_data.match(/pic_video=([\w:,]+)/);
+
+            if (urlsRegex) {
+
+                var urls = urlsRegex[1].split(",").map(function(it, i) {
+                    return it.split(":")[1];
+                });
+
+                return urls;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 得到视频类型
+     * @param  {$标签对象} $box 视频容器
+     * @return {字符串}         视频类型[video、live]
+     */
+    function getVideoType($box) {
+
+        // console.log($box);
+
+        // console.log($box.attr("action-data"));
+
+        var typeRegex = $box.attr("action-data").match(/type=(\w+)&/);
+
+        // console.log(typeRegex);
+
+        return typeRegex[1];
     }
 
     /**
@@ -144,11 +184,13 @@
     }
 
     // 处理拷贝
-    function handleCopy($ul, $srcs) {
+    function handleCopy($ul, $links) {
 
         putButton($ul, "复制图片链接", function() {
 
-            var link = $srcs.get().join("\n");
+            var link = $links.get().map(function(it, i) {
+                return it.src;
+            }).join("\n");
 
             GM_setClipboard(link, "text");
 
@@ -157,13 +199,15 @@
     }
 
     // 处理下载
-    function handleDownload($ul, $srcs) {
+    function handleDownload($ul, $links) {
 
         putButton($ul, "逐个下载图片", function() {
 
-            $srcs.each(function(i, it) {
+            $links.each(function(i, it) {
 
-                GM_download(it, getPathName(it));
+                // console.log("name:" + it.name + ",src=" + it.src);
+
+                GM_download(it.src, it.name);
             });
         });
     }
@@ -171,12 +215,35 @@
     /**
      * 处理打包下载
      */
-    function handleDownloadZip($ul, $srcs) {
+    function handleDownloadZip($ul, $links) {
 
         putButton($ul, "打包下载图片", function() {
 
-            zipPicture($ul, $srcs);
+            startZip($ul, $links);
         });
+    }
+
+    /**
+     * 下载微博故事
+     * @param  {$标签对象} $box 视频box
+     */
+    function downloadWeiboStory($box) {
+
+        var action_data = $box.attr("action-data");
+
+        var urlRegex = action_data.match(/gif_url=([\w%.]+)&/);
+
+        var url = urlRegex[1];
+
+        var src = decodeURIComponent(decodeURIComponent(url));
+
+        var name = getPathName(src.split("?")[0]);
+
+        if (src.indexOf("//") === 0) {
+            src = "https:" + src;
+        }
+
+        downloadVideo($box, name, src);
     }
 
     /**
@@ -219,7 +286,7 @@
 
                 GM_notification("未能找到视频地址！");
 
-                throw new new Error("未能找到视频地址！");
+                throw new Error("未能找到视频地址！");
             }
 
             name = getPathName(src.split("?")[0]);
@@ -235,6 +302,23 @@
             GM_notification("提取视频地址失败！");
         }
 
+
+        downloadVideo($box, name, src);
+    }
+
+    /**
+     * 下载直播回放
+     * @param  {$标签对象} $li 视频box
+     */
+    function downloadLiveVCRVideo($ul, $li) {
+        // TODO 暂不支持
+    }
+
+    /**
+     * 下载视频
+     * @param  {$标签对象} $box 视频box
+     */
+    function downloadVideo($box, name, src) {
 
         GM_notification("即将开始下载...");
 
@@ -258,18 +342,51 @@
     }
 
     /**
-     * 下载直播回放
-     * @param  {$标签对象} $li 视频box
+     * 得到LivePhoto链接集
+     * @param  {$标签对象} $ul 操作列表
+     * @return {Link数组}     链接集，可能为null
      */
-    function downloadLiveVCRVideo($ul, $li) {
+    function getLivePhoto($ul) {
 
+        var $box = $ul.parents(".WB_feed_detail").find(".WB_media_a");
+
+        var srcs;
+
+        // 仅有一张LivePhoto
+        if ($box.hasClass('WB_media_a_m1')) {
+
+            srcs = extractLivePhotoSrc($box.find(".WB_pic"));
+
+        } else {
+
+            srcs = extractLivePhotoSrc($box);
+        }
+
+        if (srcs) {
+            srcs = srcs.map(function(it, i) {
+
+                var src = "https://video.weibo.com/media/play?livephoto=//us.sinaimg.cn/" + it + ".mov&KID=unistore,videomovSrc";
+
+                return bornLink(it + ".mp4", src);
+            });
+        }
+
+        return srcs;
     }
 
-    // 得到大图片链接
-    function getPicSrc($ul) {
+    function bornLink(name, src) {
+        return { name: name, src: src };
+    }
+
+    /**
+     * 得到大图链接
+     * @param  {$标签对象} $ul 操作列表
+     * @return {Link数组}     链接集，可能为null
+     */
+    function getLargePhoto($ul) {
 
         // 得到每一个图片
-        var srcs = $ul.parents(".WB_feed_detail").find("li.WB_pic img").map(function() {
+        var links = $ul.parents(".WB_feed_detail").find("li.WB_pic img").map(function() {
 
             var parts = $(this).attr("src").split("/");
 
@@ -280,11 +397,10 @@
                 console.log(src);
             }
 
-            return src;
+            return bornLink(getPathName(src), src);
         });
 
-
-        return srcs;
+        return links;
     }
 
     /**
@@ -348,10 +464,10 @@
     }
 
     /**
-     * 打包图片
-     * @param  {$数组} $srcs 图片地址集
+     * 开始打包
+     * @param  {$数组} $links 图片地址集
      */
-    function zipPicture($ul, $srcs) {
+    function startZip($ul, $links) {
 
         GM_notification("正在打包，请稍候...");
 
@@ -361,27 +477,27 @@
 
         var names = [];
 
-        $srcs.each(function(i, it) {
+        $links.each(function(i, it) {
 
-            var name = getPathName(it);
+            var name = it.name;
 
             GM_xmlhttpRequest({
                 method: 'GET',
-                url: it,
+                url: it.src,
                 responseType: "blob",
                 onload: function(response) {
 
                     zip.file(name, response.response);
 
-                    downloadZipIfComplete($ul, progress, name, zip, names, $srcs.length);
+                    downloadZipIfComplete($ul, progress, name, zip, names, $links.length);
                 },
                 onerror: function(e) {
 
                     console.error(e);
 
-                    GM_notification("第" + (i + 1) + "张图片，获取失败！");
+                    GM_notification("第" + (i + 1) + "个对象时，获取失败！");
 
-                    downloadZipIfComplete($ul, progress, name, zip, names, $srcs.length);
+                    downloadZipIfComplete($ul, progress, name, zip, names, $links.length);
                 }
             });
         });
