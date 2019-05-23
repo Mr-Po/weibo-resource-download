@@ -1,7 +1,8 @@
 ### 微博 [ 图片 | 视频 ] 下载
 
 * * *
-可下载微博(weibo.com)上的多媒体资源。
+油猴（Tampermonkey）脚本，用于下载微博(weibo.com)上的多媒体资源，可通过以下途径安装：
+[https://greasyfork.org/zh-CN/scripts/383402](https://greasyfork.org/zh-CN/scripts/383402)
 
 支持资源：
 * 动/静图、LivePhoto
