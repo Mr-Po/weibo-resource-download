@@ -9,9 +9,9 @@
 // @require      http://code.jquery.com/jquery-1.11.0.min.js
 // @require      https://stuk.github.io/jszip/dist/jszip.min.js
 // @require      https://raw.githubusercontent.com/eligrey/FileSaver.js/master/dist/FileSaver.min.js
-// @require      https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/StreamSaver.js
 // @connect      sinaimg.cn
 // @connect      miaopai.com
+// @connect      youku.com
 // @grant        GM_notification
 // @grant        GM_setClipboard
 // @grant        GM_download
@@ -19,7 +19,6 @@
 // ==/UserScript==
 
 (function() {
-    /* jshint esversion: 6 */
     'use strict';
 
     // 是否启用调试模式
@@ -28,7 +27,7 @@
     //每隔 space 毫秒执行一次
     var space = 5000;
 
-    // TODO livePhoto、直播回放、【蒲熠星的转发视频】
+    // TODO livePhoto、直播回放
 
     // 添加扩展如果需要
     function addExtendIfNeed() {
@@ -75,7 +74,23 @@
         }
     }
 
-    var videoHandlers = $([handleBlowVideo]);
+    /**
+     * 得到视频类型
+     * @param  {$标签对象} $box 视频容器
+     * @return {字符串}      视频类型[video、live]
+     */
+    function getVideoType($box) {
+
+        // console.log($box);
+
+        // console.log($box.attr("action-data"));
+
+        var typeRegex = $box.attr("action-data").match(/type=feed(\w+)&/);
+
+        // console.log(typeRegex);
+
+        return typeRegex[1];
+    }
 
     /**
      * 处理视频如果需要
@@ -83,18 +98,34 @@
      */
     function handleVideoIfNeed($ul) {
 
-        var $detail = $ul.parents(".WB_feed_detail");
+        var $box = $ul.parents(".WB_feed_detail").find(".WB_video,.WB_video_a");
 
-        videoHandlers.each(function(i, it) {
+        // 不存在视频
+        if($box.length===0){
+            return;
+        }
 
-            var fun = it($detail);
+        var type = getVideoType($box);
 
-            if (fun) {
+        var fun;
 
-                putButton($ul, "下载当前视频", fun);
-                return false;
-            }
-        });
+        if (type === "video") { // 短视屏（秒拍、梨视频、优酷）
+
+            fun = function() { downloadBlowVideo($box); };
+
+        } else if (type === "live") { // 直播回放
+
+            //TODO 暂不支持
+
+        } else {
+
+            console.warn("未知的类型：" + type);
+        }
+
+        if (fun) {
+
+            putButton($ul, "下载当前视频", fun);
+        }
     }
 
     /**
@@ -148,91 +179,64 @@
         });
     }
 
-    function handleBlowVideo($detail) {
-
-        var $box = $detail.find(".WB_video_a");
-
-        if ($box.length > 0) {
-
-            return function() {
-                downloadBlowVideo($box);
-            };
-        }
-    }
-
     /**
      * 下载酷燃视频
      * @param  {$标签对象} $box 视频box
      */
     function downloadBlowVideo($box) {
 
-        var video_sources = $box.attr("video-sources");
+        var src, name;
 
-        // 多清晰度源
-        var sources = video_sources.split("&");
+        try {
 
-        if (isDebug) {
-            console.log(sources);
-        }
+            var video_sources = $box.attr("video-sources");
 
-        // http://xxx?xxx=123
-        var src;
+            // 多清晰度源
+            var sources = video_sources.split("&");
 
-        // 逐步下调清晰度
-        for (var i = sources.length - 2; i >= 0; i -= 2) {
-
-            if (sources[i].trim().split("=")[1].trim().length > 0) {
-
-                // 解码
-                var source = decodeURIComponent(decodeURIComponent(sources[i].trim()));
-
-                if (isDebug) {
-                    console.log(source);
-                }
-
-                src = source.substring(source.indexOf("=") + 1);
+            if (isDebug) {
+                console.log(sources);
             }
-        }
 
-        if (!src) { // 未找到合适的视频地址
 
-            GM_notification("未能找到视频地址！");
+            // 逐步下调清晰度
+            for (var i = sources.length - 2; i >= 0; i -= 2) {
 
-            throw new new Error("未能找到视频地址！");
-        }
+                if (sources[i].trim().split("=")[1].trim().length > 0) {
 
-        var name = getPathName(src.split("?")[0]);
+                    // 解码
+                    var source = decodeURIComponent(decodeURIComponent(sources[i].trim()));
 
-        if (isDebug) {
-            console.log("download：" + name + "=" + src);
+                    if (isDebug) {
+                        console.log(source);
+                    }
+
+                    src = source.substring(source.indexOf("=") + 1);
+                }
+            }
+
+            if (!src) { // 未找到合适的视频地址
+
+                GM_notification("未能找到视频地址！");
+
+                throw new new Error("未能找到视频地址！");
+            }
+
+            name = getPathName(src.split("?")[0]);
+
+            if (isDebug) {
+                console.log("download：" + name + "=" + src);
+            }
+
+        } catch (e) {
+
+            console.error(e);
+
+            GM_notification("提取视频地址失败！");
         }
 
 
         GM_notification("即将开始下载...");
-
-        /*fetch(src.replace("http:", "https:"), {
-            method: 'GET',
-            mode: 'cors',
-        }).then(res => {
-
-            const fileStream = streamSaver.createWriteStream(name);
-
-            // more optimized
-            if (res.body.pipeTo) {
-                return res.body.pipeTo(fileStream);
-            }
-
-            const writer = fileStream.getWriter();
-            const reader = res.body.getReader();
-            const pump = () => reader.read().then(({ value, done }) =>
-                done ? writer.close() : writer.write(value).then(pump)
-            );
-
-            // Start the reader
-            pump().then(() =>
-                console.log('Closed the stream, Done writing')
-            );
-        });*/
 
         var progress = bornProgress($box);
 
