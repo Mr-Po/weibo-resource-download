@@ -30,7 +30,7 @@
 (function() {
     'use strict';
 
-    // TODO 直播回放，【热门、搜索】视频
+    // TODO 直播回放
 
     /**
      * 资源命名策略
@@ -51,7 +51,7 @@
      * 
      * @type 整数
      */
-    var zipNamingStrategy = 0;
+    var zipNamingStrategy = 1;
 
     /**
      * 命名连接符
@@ -82,13 +82,160 @@
      */
     var isDebug = false;
 
+    var handledWeiBoCardClass = "weibo_383402_extend";
+
     /**
-     * 添加扩展如果需要
+     * 搜索微博解析器
+     * 
+     * @type {Object}
      */
-    function addExtendIfNeed() {
+    var searchWeiBoResolver = {
+        getOperationList: function() {
+            return $("div .menu ul:not([class='" + handledWeiBoCardClass + "'])");
+        },
+        getPhoto: function($ul) {
+            return $ul.parents(".card-wrap").find(".media.media-piclist img");
+        },
+        getLivePhotoContainer: function($ul) {
+            return $(null);
+        },
+        getWeiBoId: function($ul) {
+
+            var mid = $ul.parents(".card-wrap").attr("mid").trim();
+
+            return mid;
+        },
+        getWeiBoUserId: function($ul) {
+
+            var $a = $ul.parents(".card-wrap").find("a.name").first();
+
+            var id = $a.attr("href").match(/weibo\.com\/(\d+)/)[1].trim();
+
+            if (isDebug) {
+                console.log("得到的微博ID为：" + id);
+            }
+
+            return id;
+        },
+        getWeiBoUserName: function($ul) {
+
+            var name = $ul.parents(".card-wrap").find("a.name").first().text().trim();
+
+            if (isDebug) {
+                console.log("得到的名称为：" + name);
+            }
+
+            return name;
+        },
+        getProgressContainer: function($sub) {
+            return $sub.parents(".card-wrap").find("a.name").first().parent();
+        },
+        getVideoBox: function($ul) {
+            return $ul.parents(".card-wrap").find(".WB_video_h5").first();
+        },
+        geiVideoSrc: function($box) {
+
+            var src = $box.attr("action-data").match(/video_src=([\w\/\.%]+)/)[1];
+
+            src = decodeURIComponent(decodeURIComponent(src));
+
+            if (src.indexOf("http") != 0) {
+                src = "https:" + src;
+            }
+
+            return src;
+        }
+    };
+
+    /**
+     * 我的微博解析器（含：我的微博、他人微博、我的收藏、热门微博）
+     * 
+     * @type {Object}
+     */
+    var myWeiBoResolver = {
+        getOperationList: function() {
+            return $("div .screen_box ul:not([class='" + handledWeiBoCardClass + "'])");
+        },
+        getPhoto: function($ul) {
+            return $ul.parents(".WB_feed_detail").find("li.WB_pic img");
+        },
+        getLivePhotoContainer: function($ul) {
+            return $ul.parents(".WB_feed_detail").find(".WB_media_a");
+        },
+        getWeiBoId: function($ul) {
+
+            var mid = $ul.parents(".WB_cardwrap").attr("mid").trim();
+
+            return mid;
+        },
+        getWeiBoUserId: function($ul) {
+
+            var $a = $ul.parents("div.WB_feed_detail").find("div.WB_info a").first();
+
+            var id = $a.attr("usercard").match(/id=(\d+)/)[1].trim();
+
+            if (isDebug) {
+                console.log("得到的微博ID为：" + id);
+            }
+
+            return id;
+        },
+        getWeiBoUserName: function($ul) {
+
+            var name = $ul.parents("div.WB_feed_detail").find("div.WB_info a").first().text().trim();
+
+            if (isDebug) {
+                console.log("得到的名称为：" + name);
+            }
+
+            return name;
+        },
+        getProgressContainer: function($sub) {
+            return $sub.parents("div.WB_feed_detail").find("div.WB_info").first();
+        },
+        getVideoBox: function($ul) {
+            return $ul.parents(".WB_feed_detail").find(".WB_video,.WB_video_a,.li_story");
+        },
+        geiVideoSrc: function($box) {
+
+            var video_sources = $box.attr("video-sources");
+
+            // 多清晰度源
+            var sources = video_sources.split("&");
+
+            if (isDebug) {
+                console.log(sources);
+            }
+
+            var src;
+
+            // 逐步下调清晰度
+            for (var i = sources.length - 2; i >= 0; i -= 2) {
+
+                if (sources[i].trim().split("=")[1].trim().length > 0) {
+
+                    // 解码
+                    var source = decodeURIComponent(decodeURIComponent(sources[i].trim()));
+
+                    if (isDebug) {
+                        console.log(source);
+                    }
+
+                    src = source.substring(source.indexOf("=") + 1);
+                }
+            }
+
+            return src;
+        }
+    };
+
+    /**
+     * 处理微博卡片
+     */
+    function handleWeiBoCard() {
 
         // 查找未被扩展的box
-        var $uls = $("div .screen_box ul:not([class='pic_copy_extend'])");
+        var $uls = getWeiBoResolver().getOperationList();
 
         if ($uls.length > 0) {
 
@@ -102,11 +249,31 @@
             });
 
             // 批量给这些box添加已扩展标记
-            $uls.addClass("pic_copy_extend");
+            $uls.addClass(handledWeiBoCardClass);
         }
     }
 
 
+    /**
+     * 得到操作列表
+     * @return {$标签对象}          操作列表
+     */
+    function getWeiBoResolver() {
+
+        var resolver;
+
+        // 微博搜索
+        if (window.location.href.indexOf("https://s.weibo.com") === 0) {
+
+            resolver = searchWeiBoResolver;
+
+        } else { // 我的微博、他人微博、我的收藏、热门微博
+
+            resolver = myWeiBoResolver;
+        }
+
+        return resolver;
+    }
 
     /**
      * 处理图片，如果需要
@@ -146,7 +313,7 @@
      */
     function handleVideoIfNeed($ul) {
 
-        var $box = $ul.parents(".WB_feed_detail").find(".WB_video,.WB_video_a,.li_story");
+        var $box = getWeiBoResolver().getVideoBox($ul);
 
         // 不存在视频
         if ($box.length === 0) {
@@ -313,31 +480,7 @@
 
         try {
 
-            var video_sources = $box.attr("video-sources");
-
-            // 多清晰度源
-            var sources = video_sources.split("&");
-
-            if (isDebug) {
-                console.log(sources);
-            }
-
-
-            // 逐步下调清晰度
-            for (var i = sources.length - 2; i >= 0; i -= 2) {
-
-                if (sources[i].trim().split("=")[1].trim().length > 0) {
-
-                    // 解码
-                    var source = decodeURIComponent(decodeURIComponent(sources[i].trim()));
-
-                    if (isDebug) {
-                        console.log(source);
-                    }
-
-                    src = source.substring(source.indexOf("=") + 1);
-                }
-            }
+            src = getWeiBoResolver().geiVideoSrc($box);
 
             if (!src) { // 未找到合适的视频地址
 
@@ -407,7 +550,7 @@
      */
     function getLivePhoto($ul, start) {
 
-        var $box = $ul.parents(".WB_feed_detail").find(".WB_media_a");
+        var $box = getWeiBoResolver().getLivePhotoContainer($ul);
 
         var srcs;
 
@@ -450,7 +593,7 @@
     function getLargePhoto($ul) {
 
         // 得到每一个图片
-        var links = $ul.parents(".WB_feed_detail").find("li.WB_pic img").map(function(i, it) {
+        var links = getWeiBoResolver().getPhoto($ul).map(function(i, it) {
 
             var parts = $(it).attr("src").split("/");
 
@@ -479,14 +622,16 @@
 
         var name;
 
+        var weiBoResolver = getWeiBoResolver();
+
         // 2：微博用户ID-微博ID（如：5578564422-4375413591293810.zip）
         if (zipNamingStrategy === 2) {
 
-            name = getWeiBoUserId($ul) + nameingSeparator + getWeiBoId($ul);
+            name = weiBoResolver.getWeiBoUserId($ul) + nameingSeparator + weiBoResolver.getWeiBoId($ul);
 
         } else { // 1：微博用户名-微博ID（如：小米商城-4375413591293810.zip）[缺省]
 
-            name = getWeiBoUserName($ul) + nameingSeparator + getWeiBoId($ul);
+            name = weiBoResolver.getWeiBoUserName($ul) + nameingSeparator + weiBoResolver.getWeiBoId($ul);
         }
 
         return name;
@@ -521,14 +666,16 @@
 
             var postfix = getPathPostfix(src);
 
+            var weiBoResolver = getWeiBoResolver();
+
             // 2：微博用户ID-微博ID-序号（如：5578564422-4375413591293810-01.jpg）
             if (resourceNamingStrategy == 2) {
 
-                name = getWeiBoUserId($ul) + nameingSeparator + getWeiBoId($ul) + nameingSeparator + index + postfix;
+                name = weiBoResolver.getWeiBoUserId($ul) + nameingSeparator + weiBoResolver.getWeiBoId($ul) + nameingSeparator + index + postfix;
 
             } else { // 1：微博用户名-微博ID-序号（如：小米商城-4375413591293810-01.jpg）[缺省]
 
-                name = getWeiBoUserName($ul) + nameingSeparator + getWeiBoId($ul) + nameingSeparator + index + postfix;
+                name = weiBoResolver.getWeiBoUserName($ul) + nameingSeparator + weiBoResolver.getWeiBoId($ul) + nameingSeparator + index + postfix;
 
             }
         }
@@ -568,51 +715,9 @@
         return name;
     }
 
-    /**
-     * 得到微博ID
-     * @param  {$标签对象} $ul 操作列表
-     * @return {字符串}        微博ID
-     */
-    function getWeiBoId($ul) {
 
-        var mid = $ul.parents(".WB_cardwrap").attr("mid");
 
-        return mid;
-    }
 
-    /**
-     * 得到微博用户ID
-     * @param  {$标签对象} $ul 操作列表
-     * @return {字符串}        微博用户ID
-     */
-    function getWeiBoUserId($ul) {
-
-        var $a = $ul.parents("div.WB_feed_detail").find("div.WB_info a").first();
-
-        var id = $a.attr("usercard").match(/id=(\d+)/)[1];
-
-        if (isDebug) {
-            console.log("得到的微博ID为：" + id);
-        }
-
-        return id;
-    }
-
-    /**
-     * 得到微博用户名称
-     * @param  {$标签对象} $ul 操作列表
-     * @return {字符串}        微博用户名称
-     */
-    function getWeiBoUserName($ul) {
-
-        var name = $ul.parents("div.WB_feed_detail").find("div.WB_info a").first().text();
-
-        if (isDebug) {
-            console.log("得到的名称为：" + name);
-        }
-
-        return name;
-    }
 
     /**
      * 生成一个进度条
@@ -622,7 +727,7 @@
      */
     function bornProgress($sub) {
 
-        var $div = $sub.parents("div.WB_feed_detail").find("div.WB_info").first();
+        var $div = getWeiBoResolver().getProgressContainer($sub);
 
         // 尝试获取进度条
         var $progress = $div.find('progress');
@@ -648,7 +753,7 @@
      */
     function startZip($ul, $links) {
 
-        tip("正在提取，请稍候...","iconExtract");
+        tip("正在提取，请稍候...", "iconExtract");
 
         var progress = bornProgress($ul);
 
@@ -702,7 +807,7 @@
 
         if (names.length === length) {
 
-            tip("正在打包，请稍候...","iconZip");
+            tip("正在打包，请稍候...", "iconZip");
 
             zip.generateAsync({
                 type: "blob"
@@ -740,5 +845,5 @@
         tip(text, "iconSuccess");
     }
 
-    setInterval(addExtendIfNeed, space);
+    setInterval(handleWeiBoCard, space);
 })();
