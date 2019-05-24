@@ -14,6 +14,8 @@
 // @resource iconError https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/error.png
 // @resource iconSuccess https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/success.png
 // @resource iconInfo https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/info.png
+// @resource iconExtract https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/extract.png
+// @resource iconZip https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/zip.png
 // @connect      sinaimg.cn
 // @connect      miaopai.com
 // @connect      youku.com
@@ -646,7 +648,7 @@
      */
     function startZip($ul, $links) {
 
-        tipInfo("正在提取，请稍候...");
+        tip("正在提取，请稍候...","iconExtract");
 
         var progress = bornProgress($ul);
 
@@ -700,7 +702,7 @@
 
         if (names.length === length) {
 
-            tipInfo("正在打包，请稍候...");
+            tip("正在打包，请稍候...","iconZip");
 
             zip.generateAsync({
                 type: "blob"
