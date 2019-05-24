@@ -6,6 +6,8 @@
 // @author       Mr.Po
 // @match        https://weibo.com/*
 // @match        https://www.weibo.com/*
+// @match        https://d.weibo.com/*
+// @match        https://s.weibo.com/*
 // @require      https://code.jquery.com/jquery-1.11.0.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.0/jszip.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js
@@ -22,17 +24,62 @@
 (function() {
     'use strict';
 
-    // 是否启用调试模式
-    var isDebug = false;
+    // TODO 直播回放，【热门、搜索】视频
 
-    //每隔 space 毫秒执行一次
+    /**
+     * 资源命名策略
+     *
+     * 0：资源原始名称（如：0065x5rwly1g3c6exw0a2j30u012utyg.jpg）
+     * 1：微博用户名-微博ID-序号（如：小米商城-4375413591293810-01.jpg）[缺省]
+     * 2：微博用户ID-微博ID-序号（如：5578564422-4375413591293810-01.jpg）
+     * 
+     * @type 整数
+     */
+    var resourceNamingStrategy = 1;
+
+    /**
+     * 打包命名策略
+     * 
+     * 1：微博用户名-微博ID（如：小米商城-4375413591293810.zip）[缺省]
+     * 2：微博用户ID-微博ID（如：5578564422-4375413591293810.zip）
+     * 
+     * @type 整数
+     */
+    var zipNamingStrategy = 0;
+
+    /**
+     * 命名连接符
+     * 即：“微博用户名-微博ID-序号”，中的短横线“-”
+     * @type {String}
+     */
+    var nameingSeparator = "-";
+
+    /**
+     * 最大等待请求时间（超时时间）
+     * 
+     * @type {Number}
+     */
+    var maxRequestTime = 5000;
+
+    /**
+     * 每隔 space 毫秒检查一次，是否有新的微博被加载出来
+     * 此值越小，检查越快；过小会造成浏览器卡顿
+     * @type {Number}
+     */
     var space = 5000;
 
-    // TODO livePhoto、直播回放
+    /**
+     * 是否启用调试模式
+     * 启用后，浏览器控制台会显示此脚本运行时的调试数据
+     * @type {Boolean}
+     */
+    var isDebug = false;
 
-    // 添加扩展如果需要
+
+    /**
+     * 添加扩展如果需要
+     */
     function addExtendIfNeed() {
-
 
         // 查找未被扩展的box
         var $uls = $("div .screen_box ul:not([class='pic_copy_extend'])");
@@ -70,9 +117,12 @@
         // 判断图片是否存在
         if ($links.length > 0) {
 
-            var lp_links = getLivePhoto($ul);
+            // 得到LivePhoto的链接
+            var lp_links = getLivePhoto($ul, $links.length);
 
+            // 存在LivePhoto
             if (lp_links) {
+
                 $links = $($links.get().concat(lp_links));
             }
 
@@ -224,7 +274,8 @@
     }
 
     /**
-     * 下载微博故事
+     * 下载微博故事视频
+     * 
      * @param  {$标签对象} $box 视频box
      */
     function downloadWeiboStory($box) {
@@ -237,7 +288,7 @@
 
         var src = decodeURIComponent(decodeURIComponent(url));
 
-        var name = getPathName(src.split("?")[0]);
+        var name = getResourceName($box, src.split("?")[0], 0);
 
         if (src.indexOf("//") === 0) {
             src = "https:" + src;
@@ -289,7 +340,7 @@
                 throw new Error("未能找到视频地址！");
             }
 
-            name = getPathName(src.split("?")[0]);
+            name = getResourceName($box, src.split("?")[0], 0);
 
             if (isDebug) {
                 console.log("download：" + name + "=" + src);
@@ -343,10 +394,12 @@
 
     /**
      * 得到LivePhoto链接集
-     * @param  {$标签对象} $ul 操作列表
-     * @return {Link数组}     链接集，可能为null
+     * 
+     * @param   {$标签对象} $ul     操作列表
+     * @param   {整数}      start   下标开始的位置
+     * @return  {Link数组}          链接集，可能为null
      */
-    function getLivePhoto($ul) {
+    function getLivePhoto($ul, start) {
 
         var $box = $ul.parents(".WB_feed_detail").find(".WB_media_a");
 
@@ -362,12 +415,16 @@
             srcs = extractLivePhotoSrc($box);
         }
 
+        // 判断是否存在LivePhoto的链接
         if (srcs) {
+
             srcs = srcs.map(function(it, i) {
 
                 var src = "https://video.weibo.com/media/play?livephoto=//us.sinaimg.cn/" + it + ".mov&KID=unistore,videomovSrc";
 
-                return bornLink(it + ".mp4", src);
+                var name = getResourceName($ul, "https://weibo.com/" + it + ".mp4", i + start);
+
+                return bornLink(name, src);
             });
         }
 
@@ -380,15 +437,16 @@
 
     /**
      * 得到大图链接
-     * @param  {$标签对象} $ul 操作列表
-     * @return {Link数组}     链接集，可能为null
+     * 
+     * @param  {$标签对象} $ul      操作列表
+     * @return {Link数组}           链接集，可能为null
      */
     function getLargePhoto($ul) {
 
         // 得到每一个图片
-        var links = $ul.parents(".WB_feed_detail").find("li.WB_pic img").map(function() {
+        var links = $ul.parents(".WB_feed_detail").find("li.WB_pic img").map(function(i, it) {
 
-            var parts = $(this).attr("src").split("/");
+            var parts = $(it).attr("src").split("/");
 
             // 替换为大图链接
             var src = "http://wx2.sinaimg.cn/large/" + parts[parts.length - 1];
@@ -397,20 +455,105 @@
                 console.log(src);
             }
 
-            return bornLink(getPathName(src), src);
+            var name = getResourceName($ul, src, i);
+
+            return bornLink(name, src);
         });
 
         return links;
     }
 
     /**
-     * 得到图片名称
-     * @param  {字符串} src 图片地址
-     * @return {字符串}     图片名称（含后缀）
+     * 得到打包名称
+     * 
+     * @param  {$标签对象} $ul      操作列表
+     * @return {字符串}             压缩包名称(不含后缀)
      */
-    function getPathName(src) {
+    function getZipName($ul) {
 
-        var name = src.substring(src.lastIndexOf("/") + 1);
+        var name;
+
+        // 2：微博用户ID-微博ID（如：5578564422-4375413591293810.zip）
+        if (zipNamingStrategy === 2) {
+
+            name = getWeiBoUserId($ul) + nameingSeparator + getWeiBoId($ul);
+
+        } else { // 1：微博用户名-微博ID（如：小米商城-4375413591293810.zip）[缺省]
+
+            name = getWeiBoUserName($ul) + nameingSeparator + getWeiBoId($ul);
+        }
+
+        return name;
+    }
+
+    /**
+     * 得到资源名称
+     * 
+     * @param  {$标签对象} $ul      操作列表
+     * @param  {字符串}    src      资源地址
+     * @param  {整数}      index    序号
+     * @return {字符串}             资源名称(含后缀)
+     */
+    function getResourceName($ul, src, index) {
+
+        var name;
+
+        // 0：资源原始名称（如：0065x5rwly1g3c6exw0a2j30u012utyg.jpg）
+        if (resourceNamingStrategy === 0) {
+
+            name = getPathName(src);
+
+        } else {
+
+            // 修正，从1开始
+            index++;
+
+            // 补齐位数：01、02、03...
+            if (index.toString().length === 1) {
+                index = "0" + index.toString();
+            }
+
+            var postfix = getPathPostfix(src);
+
+            // 2：微博用户ID-微博ID-序号（如：5578564422-4375413591293810-01.jpg）
+            if (resourceNamingStrategy == 2) {
+
+                name = getWeiBoUserId($ul) + nameingSeparator + getWeiBoId($ul) + nameingSeparator + index + postfix;
+
+            } else { // 1：微博用户名-微博ID-序号（如：小米商城-4375413591293810-01.jpg）[缺省]
+
+                name = getWeiBoUserName($ul) + nameingSeparator + getWeiBoId($ul) + nameingSeparator + index + postfix;
+
+            }
+        }
+
+        return name;
+    }
+
+    /**
+     * 得到后缀
+     * @param  {字符串} path 路径
+     * @return {字符串}     后缀（含.）
+     */
+    function getPathPostfix(path) {
+
+        var postfix = path.substring(path.lastIndexOf("."));
+
+        if (isDebug) {
+            console.log("截得后缀为：" + postfix);
+        }
+
+        return postfix;
+    }
+
+    /**
+     * 得到资源原始名称
+     * @param  {字符串} path 路径
+     * @return {字符串}     名称（含后缀）
+     */
+    function getPathName(path) {
+
+        var name = path.substring(path.lastIndexOf("/") + 1);
 
         if (isDebug) {
             console.log("截得名称为：" + name);
@@ -420,19 +563,49 @@
     }
 
     /**
-     * 得到当前卡片的名称
+     * 得到微博ID
      * @param  {$标签对象} $ul 操作列表
-     * @return {字符串}        卡片名称
+     * @return {字符串}        微博ID
      */
-    function getCardName($ul) {
+    function getWeiBoId($ul) {
 
-        var cardName = $ul.parents("div.WB_feed_detail").find("div.WB_info a").first().text();
+        var mid = $ul.parents(".WB_cardwrap").attr("mid");
+
+        return mid;
+    }
+
+    /**
+     * 得到微博用户ID
+     * @param  {$标签对象} $ul 操作列表
+     * @return {字符串}        微博用户ID
+     */
+    function getWeiBoUserId($ul) {
+
+        var $a = $ul.parents("div.WB_feed_detail").find("div.WB_info a").first();
+
+        var id = $a.attr("usercard").match(/id=(\d+)/)[1];
 
         if (isDebug) {
-            console.log("得到的名称为：" + cardName);
+            console.log("得到的微博ID为：" + id);
         }
 
-        return cardName;
+        return id;
+    }
+
+    /**
+     * 得到微博用户名称
+     * @param  {$标签对象} $ul 操作列表
+     * @return {字符串}        微博用户名称
+     */
+    function getWeiBoUserName($ul) {
+
+        var name = $ul.parents("div.WB_feed_detail").find("div.WB_info a").first().text();
+
+        if (isDebug) {
+            console.log("得到的名称为：" + name);
+        }
+
+        return name;
     }
 
     /**
@@ -484,6 +657,7 @@
             GM_xmlhttpRequest({
                 method: 'GET',
                 url: it.src,
+                timeout: maxRequestTime,
                 responseType: "blob",
                 onload: function(response) {
 
@@ -495,7 +669,13 @@
 
                     console.error(e);
 
-                    GM_notification("第" + (i + 1) + "个对象时，获取失败！");
+                    GM_notification("第" + (i + 1) + "个对象，获取失败！");
+
+                    downloadZipIfComplete($ul, progress, name, zip, names, $links.length);
+                },
+                ontimeout:function(){
+
+                    GM_notification("第" + (i + 1) + "个对象，请求超时！");
 
                     downloadZipIfComplete($ul, progress, name, zip, names, $links.length);
                 }
@@ -503,7 +683,9 @@
         });
     }
 
-
+    /**
+     * 下载打包，如果完成
+     */
     function downloadZipIfComplete($ul, progress, name, zip, names, length) {
 
         names.push(name);
@@ -514,14 +696,16 @@
 
         if (names.length === length) {
 
+            GM_notification("打包完成，即将开始下载...");
+
             zip.generateAsync({
                     type: "blob"
                 })
                 .then(function(content) {
 
-                    var cardName = getCardName($ul);
+                    var zipName = getZipName($ul);
 
-                    saveAs(content, cardName + "-" + (new Date().getTime()) + ".zip");
+                    saveAs(content, zipName + ".zip");
                 });
         }
     }
