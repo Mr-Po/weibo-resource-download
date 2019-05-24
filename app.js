@@ -11,6 +11,9 @@
 // @require      https://code.jquery.com/jquery-1.11.0.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.0/jszip.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js
+// @resource iconError https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/error.png
+// @resource iconSuccess https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/success.png
+// @resource iconInfo https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/info.png
 // @connect      sinaimg.cn
 // @connect      miaopai.com
 // @connect      youku.com
@@ -19,6 +22,7 @@
 // @grant        GM_setClipboard
 // @grant        GM_download
 // @grant        GM_xmlhttpRequest
+// @grant        GM_getResourceURL
 // ==/UserScript==
 
 (function() {
@@ -55,11 +59,12 @@
     var nameingSeparator = "-";
 
     /**
-     * 最大等待请求时间（超时时间）
+     * 最大等待请求时间（超时时间），单位：毫秒
+     * 若经常请求超时，可适当增大此值
      * 
      * @type {Number}
      */
-    var maxRequestTime = 5000;
+    var maxRequestTime = 8000;
 
     /**
      * 每隔 space 毫秒检查一次，是否有新的微博被加载出来
@@ -74,7 +79,6 @@
      * @type {Boolean}
      */
     var isDebug = false;
-
 
     /**
      * 添加扩展如果需要
@@ -244,7 +248,7 @@
 
             GM_setClipboard(link, "text");
 
-            GM_notification("链接已复制到剪贴板！");
+            tipSuccess("链接已复制到剪贴板！");
         });
     }
 
@@ -335,7 +339,7 @@
 
             if (!src) { // 未找到合适的视频地址
 
-                GM_notification("未能找到视频地址！");
+                tipError("未能找到视频地址！");
 
                 throw new Error("未能找到视频地址！");
             }
@@ -350,7 +354,7 @@
 
             console.error(e);
 
-            GM_notification("提取视频地址失败！");
+            tipError("提取视频地址失败！");
         }
 
 
@@ -371,7 +375,7 @@
      */
     function downloadVideo($box, name, src) {
 
-        GM_notification("即将开始下载...");
+        tipInfo("即将开始下载...");
 
         var progress = bornProgress($box);
 
@@ -387,7 +391,7 @@
 
                 console.error(e);
 
-                GM_notification("视频下载出错！");
+                tipError("视频下载出错！");
             }
         });
     }
@@ -630,7 +634,7 @@
 
         } else { // 已存在时，重置value
 
-            $progress.removeAttr('value');
+            $progress[0].value = 0;
         }
 
         return $progress[0];
@@ -642,7 +646,7 @@
      */
     function startZip($ul, $links) {
 
-        GM_notification("正在打包，请稍候...");
+        tipInfo("正在提取，请稍候...");
 
         var progress = bornProgress($ul);
 
@@ -669,13 +673,13 @@
 
                     console.error(e);
 
-                    GM_notification("第" + (i + 1) + "个对象，获取失败！");
+                    tipError("第" + (i + 1) + "个对象，获取失败！");
 
                     downloadZipIfComplete($ul, progress, name, zip, names, $links.length);
                 },
-                ontimeout:function(){
+                ontimeout: function() {
 
-                    GM_notification("第" + (i + 1) + "个对象，请求超时！");
+                    tipError("第" + (i + 1) + "个对象，请求超时！");
 
                     downloadZipIfComplete($ul, progress, name, zip, names, $links.length);
                 }
@@ -696,18 +700,42 @@
 
         if (names.length === length) {
 
-            GM_notification("打包完成，即将开始下载...");
+            tipInfo("正在打包，请稍候...");
 
             zip.generateAsync({
-                    type: "blob"
-                })
-                .then(function(content) {
+                type: "blob"
+            }, function(metadata) {
 
-                    var zipName = getZipName($ul);
+                progress.value = metadata.percent / 100;
 
-                    saveAs(content, zipName + ".zip");
-                });
+            }).then(function(content) {
+
+                tipSuccess("打包完成，即将开始下载！");
+
+                var zipName = getZipName($ul);
+
+                saveAs(content, zipName + ".zip");
+            });
         }
+    }
+
+    function tip(text, iconName) {
+        GM_notification({
+            text: text,
+            image: GM_getResourceURL(iconName)
+        });
+    }
+
+    function tipInfo(text) {
+        tip(text, "iconInfo");
+    }
+
+    function tipError(text) {
+        tip(text, "iconError");
+    }
+
+    function tipSuccess(text) {
+        tip(text, "iconSuccess");
     }
 
     setInterval(addExtendIfNeed, space);
