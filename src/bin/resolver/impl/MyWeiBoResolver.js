@@ -6,8 +6,21 @@
 const MyWeiBoResolver = {};
 
 Interface.impl(MyWeiBoResolver, WeiBoResolver, {
-    getOperationList: () => $(`div .screen_box ul:not([class='${Config.handledWeiBoCardClass}'])`),
+    getOperationButton:()=>$(`div .screen_box i.ficon_arrow_down:not(.${Config.handledWeiBoCardClass})`),
+    getOperationList: $operationButton => $operationButton.parents(".screen_box").find("ul"),
     getPhoto: $ul => $ul.parents(".WB_feed_detail").find("li.WB_pic img"),
+    getPhotoOver:$ul => {
+
+        const $box = $ul.parents(".WB_feed_detail").find(".WB_media_a");
+
+        const res = $box.attr("action-data").match(/over9pic=1&/);
+
+        console.log(res);
+
+        const ids = $div.attr("action-data").match(/pic_ids=([\w,]+)&/)[1].split(",");
+
+        return ids;
+    },
     getLivePhotoContainer: $ul => $ul.parents(".WB_feed_detail").find(".WB_media_a"),
     getWeiBoId: $ul => $ul.parents(".WB_cardwrap").attr("mid").trim(),
     getWeiBoUserId: $ul => {

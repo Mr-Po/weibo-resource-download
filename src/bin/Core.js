@@ -10,22 +10,45 @@ class Core {
      */
     static handleWeiBoCard() {
 
-        // 查找未被扩展的box
-        const $uls = Core.getWeiBoResolver().getOperationList();
+        // 查找未被扩展的操作按钮
+        const $operationButtons = Core.getWeiBoResolver().getOperationButton();
 
-        if ($uls.length > 0) {
+        // 存在未被扩展的操作按钮
+        if ($operationButtons.length > 0) {
 
-            console.info(`找到未扩展的box：${$uls.length}`);
+            console.info(`找到未被扩展的操作按钮：${$operationButtons.length}`);
 
-            $uls.each(function(i, it) {
+            $operationButtons.one("click", event =>
+                Core.resolveWeiBoCard($(event.currentTarget))
+            );
 
-                PictureHandler.handlePictureIfNeed($(it));
+            $operationButtons.addClass(Config.handledWeiBoCardClass);
+        }
+    }
 
-                VideoHandler.handleVideoIfNeed($(it));
-            });
+    /**
+     * 解析 微博卡片
+     * 仅在初次点击 操作按钮[↓] 时，触发
+     *
+     * @param  {$标签对象} $operationButton  操作按钮
+     */
+    static resolveWeiBoCard($operationButton) {
 
-            // 批量给这些box添加已扩展标记
-            $uls.addClass(Config.handledWeiBoCardClass);
+        const $ul = Core.getWeiBoResolver().getOperationList($operationButton);
+
+        Core.putButton($ul, "...正在解析...", null);
+
+        try {
+
+            PictureHandler.handlePictureIfNeed($ul);
+
+            // VideoHandler.handleVideoIfNeed($ul);
+
+        } catch (e) {
+
+            console.error(e);
+
+            Tip.error(e.message);
         }
     }
 
@@ -169,5 +192,15 @@ class Core {
         const name = Config.getResourceName(wb_user_name, wb_user_id, wb_id, resource_id, no, media_type) + postfix;
 
         return name;
+    }
+
+    /**
+     * 记录日志
+     * @param  {字符串} msg 日志内容
+     */
+    static log(msg) {
+        if (Config.isDebug) {
+            console.log(msg);
+        }
     }
 }

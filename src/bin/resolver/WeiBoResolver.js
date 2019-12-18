@@ -5,8 +5,10 @@
  */
 const WeiBoResolver = new Interface("SearchWeiBoResolver",
     [
-        "getOperationList",
-        "getPhoto",
+        "getOperationButton",// 得到操作按钮[↓]
+        "getOperationList",// 根据操作按钮，得到操作列表
+        "getPhoto",// 返回图片$img数组
+        "getPhotoOver",// 得到超过部分的图片
         "getLivePhotoContainer",
         "getWeiBoId",
         "getWeiBoUserId",

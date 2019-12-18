@@ -6,8 +6,10 @@
 const SearchWeiBoResolver = {};
 
 Interface.impl(SearchWeiBoResolver, WeiBoResolver, {
+    getOperationButton:()=> "未支持",
     getOperationList: () => $(`div .menu ul:not([class='${Config.handledWeiBoCardClass}'])`),
     getPhoto: $ul => $ul.parents(".card-wrap").find(".media.media-piclist img"),
+    getPhotoOver:$ul =>"未支持",
     getLivePhotoContainer: $ul => $(null),
     getWeiBoId: $ul => $ul.parents(".card-wrap").attr("mid").trim(),
     getWeiBoUserId: $ul => {

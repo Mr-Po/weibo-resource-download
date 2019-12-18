@@ -107,8 +107,6 @@ class VideoHandler {
 
             if (!src) { // 未找到合适的视频地址
 
-                Tip.error("未能找到视频地址！");
-
                 throw new Error("未能找到视频地址！");
             }
 
@@ -121,9 +119,7 @@ class VideoHandler {
 
         } catch (e) {
 
-            console.error(e);
-
-            Tip.error("提取视频地址失败！");
+            throw new Error("未能找到视频地址！");
         }
 
         return new Link(name,src);

@@ -135,22 +135,24 @@ class PictureHandler {
      */
     static getLargePhoto($ul) {
 
-        // 得到每一个图片
-        const links = Core.getWeiBoResolver().getPhoto($ul).map(function(i, it) {
+        const resolver= Core.getWeiBoResolver();
+
+        // 得到九宫格图片
+        const links = resolver.getPhoto($ul).map(function(i, it) {
 
             const parts = $(it).attr("src").split("/");
 
             // 替换为大图链接
             const src = `http://wx2.sinaimg.cn/large/${parts[parts.length - 1]}`;
 
-            if (Config.isDebug) {
-                console.log(src);
-            }
+            Core.log(src);
 
             const name = Core.getResourceName($ul, src, i,Config.mediaType.picture);
 
             return new Link(name, src);
         });
+
+        resolver.getPhotoOver($ul);
 
         return links;
     }
