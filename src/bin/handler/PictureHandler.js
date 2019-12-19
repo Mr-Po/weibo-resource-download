@@ -1,4 +1,4 @@
-/*jshint esversion: 6 */
+/*jshint esversion: 8 */
 
 /**
  * 图片处理器(含：LivePhoto)
@@ -8,34 +8,76 @@ class PictureHandler {
     /**
      * 处理图片，如果需要
      */
-    static handlePictureIfNeed($ul) {
+    static async handlePictureIfNeed($ul) {
 
-        // 得到大图片
-        let $links = PictureHandler.getLargePhoto($ul);
+        const $button = Core.putButton($ul, "图片解析中...", null);
 
-        if (Config.isDebug) {
-            console.log(`此Item有图：${$links.length}`);
-        }
+        try {
 
-        // 判断图片是否存在
-        if ($links.length > 0) {
+            const resolver = Core.getWeiBoResolver();
 
-            // 得到LivePhoto的链接
-            const lp_links = PictureHandler.getLivePhoto($ul, $links.length);
+            const photo_9_ids = resolver.get9PhotoImgs($ul).map(function(i, it) {
 
-            // 存在LivePhoto
-            if (lp_links) {
+                const parts = $(it).attr("src").split("/");
 
-                $links = $($links.get().concat(lp_links));
+                return parts[parts.length - 1];
+            }).get();
+
+            Core.log("九宫格图片：");
+            Core.log(photo_9_ids);
+
+            const photo_9_over_ids = await resolver.get9PhotoOver($ul).catch(e => {
+
+                Tip.error(e);
+
+                return [];
+            });
+
+            Core.log("未展示图片：");
+            Core.log(photo_9_over_ids);
+
+            const photo_ids = photo_9_ids.concat(photo_9_over_ids);
+
+            Core.log("总图片：");
+            Core.log(photo_ids);
+
+            // 得到大图片
+            let $links = await PictureHandler.convertLargePhoto($ul, photo_ids);
+
+            Core.log(`此Item有图：${$links.length}`);
+
+            // 判断图片是否存在
+            if ($links.length > 0) {
+
+                // 得到LivePhoto的链接
+                const lp_links = PictureHandler.getLivePhoto($ul, $links.length);
+
+                // 存在LivePhoto
+                if (lp_links) {
+
+                    $links = $($links.get().concat(lp_links));
+                }
+
+                Core.handleCopy($ul, $links);
+
+                PictureHandler.handleDownload($ul, $links);
+
+                PictureHandler.handleDownloadZip($ul, $links);
             }
+        } catch (e) {
 
-            Core.handleCopy($ul, $links);
+            console.error(e);
 
-            PictureHandler.handleDownload($ul, $links);
+            Tip.error(e.message);
 
-            PictureHandler.handleDownloadZip($ul, $links);
+            Core.putButton($ul, "图片解析失败", null);
+
+        } finally {
+
+            Core.removeButton($ul, $button);
         }
     }
+
 
     /**
      * 提取LivePhoto的地址
@@ -128,32 +170,78 @@ class PictureHandler {
     }
 
     /**
-     * 得到大图链接
-     * 
-     * @param  {$标签对象} $ul      操作列表
-     * @return {Link数组}           链接集，可能为null
+     * 转换为大图链接
+     *
+     * @param  {$控件} $ul        操作列表
+     * @param  {数组}  photo_ids  图片id数组（可能无后缀）
+     * @return {Link数组}       链接集，可能为null
      */
-    static getLargePhoto($ul) {
+    static async convertLargePhoto($ul, photo_ids) {
 
-        const resolver= Core.getWeiBoResolver();
+        const photo_ids_fix = await Promise.all($(photo_ids).map(function(i, it) {
 
-        // 得到九宫格图片
-        const links = resolver.getPhoto($ul).map(function(i, it) {
+            return new Promise((resolve, reject) => {
 
-            const parts = $(it).attr("src").split("/");
+                // 判断是否存在后缀
+                if (it.indexOf(".") != -1) { // 存在
+
+                    resolve(it);
+
+                } else { // 不存在
+
+                    // 请求，不打开流，只需要头信息
+                    GM_xmlhttpRequest({
+                        method: 'GET',
+                        url: `http://wx2.sinaimg.cn/thumb150/${it}`,
+                        timeout: Config.maxRequestTime,
+                        responseType: "blob",
+                        onload: function(res) {
+
+                            const postfix_regex = res.responseHeaders.match(/content-type: image\/(\w+)/);
+
+                            // 找到，且图片类型为git
+                            if (postfix_regex && postfix_regex[1] == "gif") {
+
+                                resolve(`${it}.gif`);
+
+                            } else { // 未找到，或图片类型为：jpeg
+
+                                resolve(`${it}.jpg`);
+                            }
+                        },
+                        onerror: function(e) {
+
+                            console.error(e);
+
+                            reject("请求图片格式发生错误！");
+                        },
+                        ontimeout: function() {
+
+                            reject("请求图片格式超时！");
+                        }
+                    });
+                }
+            }).catch(e => {
+
+                Tip.error(e);
+
+                return `${it}.jpg`;
+            });
+        }).get());
+
+        Core.log("总图片(fix)：");
+        Core.log(photo_ids_fix);
+
+        return $(photo_ids_fix).map((i, it) => {
 
             // 替换为大图链接
-            const src = `http://wx2.sinaimg.cn/large/${parts[parts.length - 1]}`;
+            const src = `http://wx2.sinaimg.cn/large/${it}`;
 
             Core.log(src);
 
-            const name = Core.getResourceName($ul, src, i,Config.mediaType.picture);
+            const name = Core.getResourceName($ul, src, i, Config.mediaType.picture);
 
             return new Link(name, src);
         });
-
-        resolver.getPhotoOver($ul);
-
-        return links;
     }
 }

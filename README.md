@@ -15,7 +15,7 @@
 * * *
 
 支持资源：
-* 动/静图、LivePhoto
+* 动/静图(9+)、LivePhoto
 * 短视频（秒拍、梨视频、优酷）
 
 暂不支持资源：
@@ -29,18 +29,21 @@
 * 可一键复制资源地址。（由用户自行使用第三方工具下载，适合大批量多条微博资源下载，如图2）
 * 批量下载指定资源。（逐个下载）
 * 打包下载。（将多份资源装入压缩包中，然后下载）
-* 支持自定义资源文件命名。（详见图3）
+* 支持自定义资源文件命名。（详见 附录 - 命名策略）
 
 * * *
 
 **（图1，找到操作列表）**
 
-![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/01.jpg)
+![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/04.png)
 * * *
 **（图2，使用第三方工具下载）**
 
-![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/02.jpg)
+![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/05.png)
 * * *
-**（图3，命名策略）**
+##### 附录 - 命名策略
+![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/06.png)
+![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/07.png)
+![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/08.png)
 
-![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/03.jpg)
+PS：一般修改 **resourceName**（资源名称）、**zipName**（打包名称）即可。

@@ -1,4 +1,4 @@
-/*jshint esversion: 6 */
+/*jshint esversion: 8 */
 
 /**
  * 核心
@@ -36,20 +36,8 @@ class Core {
 
         const $ul = Core.getWeiBoResolver().getOperationList($operationButton);
 
-        Core.putButton($ul, "...正在解析...", null);
-
-        try {
-
-            PictureHandler.handlePictureIfNeed($ul);
-
-            // VideoHandler.handleVideoIfNeed($ul);
-
-        } catch (e) {
-
-            console.error(e);
-
-            Tip.error(e.message);
-        }
+        PictureHandler.handlePictureIfNeed($ul);
+        VideoHandler.handleVideoIfNeed($ul);
     }
 
     /**
@@ -77,6 +65,8 @@ class Core {
      * @param  {$标签对象} $ul  操作列表
      * @param  {字符串} name 按钮名称
      * @param  {方法} op   按钮操作
+     *
+     * @return {$控件} 按钮
      */
     static putButton($ul, name, op) {
 
@@ -85,6 +75,18 @@ class Core {
         $li.click(op);
 
         $ul.append($li);
+
+        return $li;
+    }
+
+    /**
+     * 移除按钮
+     * @param  {$标签对象} $ul  操作列表
+     * @param  {$控件}    $button 按钮
+     */
+    static removeButton($ul, $button) {
+
+        $ul.find(`li a:contains(${$button.text()})`).remove();
     }
 
     /**
@@ -120,8 +122,9 @@ class Core {
         const wb_user_name = weiBoResolver.getWeiBoUserName($ul);
         const wb_user_id = weiBoResolver.getWeiBoUserId($ul);
         const wb_id = weiBoResolver.getWeiBoId($ul);
+        const wb_url = weiBoResolver.getWeiBoUrl($ul);
 
-        const name = Config.getZipName(wb_user_name, wb_user_id, wb_id);
+        const name = Config.getZipName(wb_user_name, wb_user_id, wb_id, wb_url);
 
         return name;
     }
@@ -135,9 +138,7 @@ class Core {
 
         const name = path.substring(path.lastIndexOf("/") + 1);
 
-        if (Config.isDebug) {
-            console.log(`截得名称为：${name}`);
-        }
+        Core.log(`截得名称为：${name}`);
 
         return name;
     }
@@ -151,9 +152,7 @@ class Core {
 
         const postfix = path.substring(path.lastIndexOf("."));
 
-        if (Config.isDebug) {
-            console.log(`截得后缀为：${postfix}`);
-        }
+        Core.log(`截得后缀为：${postfix}`);
 
         return postfix;
     }
@@ -175,6 +174,7 @@ class Core {
         const wb_user_name = weiBoResolver.getWeiBoUserName($ul);
         const wb_user_id = weiBoResolver.getWeiBoUserId($ul);
         const wb_id = weiBoResolver.getWeiBoId($ul);
+        const wb_url = weiBoResolver.getWeiBoUrl($ul);
         const resource_id = Core.getPathName(src);
 
         // 修正，从1开始
@@ -189,7 +189,8 @@ class Core {
 
         const postfix = Core.getPathPostfix(src);
 
-        const name = Config.getResourceName(wb_user_name, wb_user_id, wb_id, resource_id, no, media_type) + postfix;
+        const name = Config.getResourceName(wb_user_name, wb_user_id, wb_id, wb_url,
+            resource_id, no, media_type) + postfix;
 
         return name;
     }

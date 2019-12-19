@@ -1,4 +1,4 @@
-/*jshint esversion: 6 */
+/*jshint esversion: 8 */
 
 /**
  * 视频处理器
@@ -9,46 +9,63 @@ class VideoHandler {
      * 处理视频如果需要
      * @param  {$标签对象} $ul 操作列表
      */
-    static handleVideoIfNeed($ul) {
+    static async handleVideoIfNeed($ul) {
 
-        const $box = Core.getWeiBoResolver().getVideoBox($ul);
+        const $button = Core.putButton($ul, "视频解析中...", null);
 
-        // 不存在视频
-        if ($box.length === 0) {
-            return;
-        }
+        try {
 
-        // 得到视频类型
-        const type = VideoHandler.getVideoType($box);
+            const $box = Core.getWeiBoResolver().getVideoBox($ul);
+
+            // 不存在视频
+            if ($box.length === 0) {
+                return;
+            }
+
+            // 得到视频类型
+            const type = VideoHandler.getVideoType($box);
 
 
-        let $link;
+            let $link;
 
-        if (type === "feedvideo") { // 短视屏（秒拍、梨视频、优酷）
+            if (type === "feedvideo") { // 短视屏（秒拍、梨视频、优酷）
 
-            $link = VideoHandler.getBlowVideoLink($box);
+                $link = VideoHandler.getBlowVideoLink($box);
 
-        } else if (type === "feedlive") { // 直播回放
+            } else if (type === "feedlive") { // 直播回放
 
-            //TODO 暂不支持
+                //TODO 暂不支持
 
-        } else if (type === "story") { // 微博故事
+            } else if (type === "story") { // 微博故事
 
-            $link = VideoHandler.getWeiboStoryLink($box);
+                $link = VideoHandler.getWeiboStoryLink($box);
 
-        } else {
+            } else {
 
-            console.warn(`未知的类型：${type}`);
-        }
+                console.warn(`未知的类型：${type}`);
+            }
 
-        // 是否存在视频链接
-        if ($link) {
+            // 是否存在视频链接
+            if ($link) {
 
-            Core.handleCopy($ul, $([$link]));
+                Core.handleCopy($ul, $([$link]));
 
-            const fun = () => VideoHandler.downloadVideo($box, $link);
+                const fun = () => VideoHandler.downloadVideo($box, $link);
 
-            Core.putButton($ul, "下载当前视频", fun);
+                Core.putButton($ul, "下载当前视频", fun);
+            }
+
+        } catch (e) {
+
+            console.error(e);
+
+            Tip.error(e.message);
+
+            Core.putButton($ul, "视频解析失败", null);
+
+        } finally {
+            
+            Core.removeButton($ul,$button);
         }
     }
 
@@ -97,7 +114,7 @@ class VideoHandler {
      * 
      * @return {Link}      链接对象
      */
-    static getBlowVideoLink($box){
+    static getBlowVideoLink($box) {
 
         let src, name;
 
@@ -112,17 +129,16 @@ class VideoHandler {
 
             name = Core.getResourceName($box, src.split("?")[0], 0, Config.mediaType.video);
 
-            if (Config.isDebug) {
-
-                console.log(`download：${name}=${src}`);
-            }
+            Core.log(`download：${name}=${src}`);
 
         } catch (e) {
+
+            console.error(e);
 
             throw new Error("未能找到视频地址！");
         }
 
-        return new Link(name,src);
+        return new Link(name, src);
     }
 
     /**

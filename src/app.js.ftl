@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         微博 [ 图片 | 视频 ] 下载
 // @namespace    http://tampermonkey.net/
-// @version      2.0
-// @description  下载微博(weibo.com)的图片和视频。（支持LivePhoto、短视频、动/静图，可以打包下载）
+// @version      2.1
+// @description  下载微博(weibo.com)的图片和视频。（支持LivePhoto、短视频、动/静图(9+)，可以打包下载）
 // @author       Mr.Po
 // @match        https://weibo.com/*
 // @match        https://www.weibo.com/*
@@ -11,6 +11,7 @@
 // @require      https://code.jquery.com/jquery-1.11.0.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.0/jszip.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js
+// @require      https://cdn.staticfile.org/mustache.js/3.1.0/mustache.min.js
 // @resource iconError https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/out/media/error.png
 // @resource iconSuccess https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/out/media/success.png
 // @resource iconInfo https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/out/media/info.png
@@ -25,6 +26,8 @@
 // @grant        GM_download
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getResourceURL
+// @grant        GM_setValue
+// @grant        GM_getValue
 // ==/UserScript==
 
 (function() {
