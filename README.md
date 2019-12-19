@@ -29,7 +29,7 @@
 * 可一键复制资源地址。（由用户自行使用第三方工具下载，适合大批量多条微博资源下载，如图2）
 * 批量下载指定资源。（逐个下载）
 * 打包下载。（将多份资源装入压缩包中，然后下载）
-* 支持自定义资源文件命名。（详见 附录 - 命名策略）
+* 支持自定义资源文件命名。（详见 附录 - 参数配置）
 
 * * *
 
@@ -41,7 +41,7 @@
 
 ![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/05.png)
 * * *
-##### 附录 - 命名策略
+##### 附录 - 参数配置
 ![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/06.png)
 ![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/07.png)
 ![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/08.png)
