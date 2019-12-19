@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         微博 [ 图片 | 视频 ] 下载
 // @namespace    http://tampermonkey.net/
-// @version      2.0
-// @description  下载微博(weibo.com)的图片和视频。（支持LivePhoto、短视频、动/静图，可以打包下载）
+// @version      2.1
+// @description  下载微博(weibo.com)的图片和视频。（支持LivePhoto、短视频、动/静图(9+)，可以打包下载）
 // @author       Mr.Po
 // @match        https://weibo.com/*
 // @match        https://www.weibo.com/*
@@ -1001,10 +1001,7 @@ class VideoHandler {
 
             name = Core.getResourceName($box, src.split("?")[0], 0, Config.mediaType.video);
 
-            if (Config.isDebug) {
-
-                console.log(`download：${name}=${src}`);
-            }
+            Core.log(`download：${name}=${src}`);
 
         } catch (e) {
 
@@ -1330,9 +1327,7 @@ class Core {
 
         const name = path.substring(path.lastIndexOf("/") + 1);
 
-        if (Config.isDebug) {
-            console.log(`截得名称为：${name}`);
-        }
+        Core.log(`截得名称为：${name}`);
 
         return name;
     }
@@ -1346,9 +1341,7 @@ class Core {
 
         const postfix = path.substring(path.lastIndexOf("."));
 
-        if (Config.isDebug) {
-            console.log(`截得后缀为：${postfix}`);
-        }
+        Core.log(`截得后缀为：${postfix}`);
 
         return postfix;
     }
