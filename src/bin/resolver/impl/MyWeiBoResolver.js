@@ -50,7 +50,7 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
                                 responseType: "json",
                                 onload: function(res) {
 
-                                    resolve(res.response.data);
+                                    resolve(res.response.data.pids);
                                 },
                                 onerror: function(e) {
 
