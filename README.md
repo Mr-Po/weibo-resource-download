@@ -35,15 +35,15 @@
 
 **（图1，找到操作列表）**
 
-![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/04.png)
+![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/04.png)
 * * *
 **（图2，使用第三方工具下载）**
 
-![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/05.png)
+![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/05.png)
 * * *
 ##### 附录 - 参数配置
-![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/06.png)
-![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/07.png)
-![](https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/media/08.png)
+![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/06.png)
+![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/07.png)
+![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/08.png)
 
 PS：一般修改 **resourceName**（资源名称）、**zipName**（打包名称）即可。
