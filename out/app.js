@@ -604,8 +604,6 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
 
         Core.log(sources);
 
-        let src;
-
         // 逐步下调清晰度
         for (var i = sources.length - 2; i >= 0; i -= 1) {
 
@@ -616,11 +614,16 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
 
                 Core.log(source);
 
-                src = source.substring(source.indexOf("=") + 1);
+                const src = source.substring(source.indexOf("=") + 1);
+
+                // 是一个链接
+                if(src.indexOf("http")==0){
+                    return src;
+                }
             }
         }
 
-        return src;
+        return null;
     }
 });
 /*jshint esversion: 8 */
