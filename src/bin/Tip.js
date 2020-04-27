@@ -8,7 +8,8 @@ class Tip {
     static tip(text, iconName) {
         GM_notification({
             text: text,
-            image: GM_getResourceURL(iconName)
+            image: GM_getResourceURL(iconName),
+            timeout: 3000,
         });
     }
 
