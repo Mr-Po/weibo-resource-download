@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         微博 [ 图片 | 视频 ] 下载
 // @namespace    http://tampermonkey.net/
-// @version      2.3
+// @version      2.3.1
 // @description  下载微博(weibo.com)的图片和视频。（支持LivePhoto、短视频、动/静图(9+)，可以打包下载）
 // @author       Mr.Po
 // @match        https://weibo.com/*
@@ -12,11 +12,11 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.0/jszip.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js
 // @require      https://cdn.staticfile.org/mustache.js/3.1.0/mustache.min.js
-// @resource iconError https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/out/media/error.png
-// @resource iconSuccess https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/out/media/success.png
-// @resource iconInfo https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/out/media/info.png
-// @resource iconExtract https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/out/media/extract.png
-// @resource iconZip https://raw.githubusercontent.com/Mr-Po/weibo-resource-download/master/out/media/zip.png
+// @resource iconError https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/out/media/error.png
+// @resource iconSuccess https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/out/media/success.png
+// @resource iconInfo https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/out/media/info.png
+// @resource iconExtract https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/out/media/extract.png
+// @resource iconZip https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/out/media/zip.png
 // @connect      sinaimg.cn
 // @connect      miaopai.com
 // @connect      youku.com
@@ -31,6 +31,7 @@
 // ==/UserScript==
 
 // @更新日志
+// v2.3.1   2020-04-27      1、优化图标资源加载
 // v2.3     2020-04-27      1、修复视频下载未默认最高清晰度的bug；2、修复逐个下载最多10张的bug；3、修复部分情况下，图片重复的bug。
 // v2.2     2020-01-12      1、更新9+图片解析策略。
 // v2.1     2019-12-19      1、支持9+图片下载。
