@@ -777,12 +777,31 @@ class PictureHandler {
 
         Core.putButton($ul, "逐个下载图片", function() {
 
-            $links.each(function(i, it) {
+            PictureHandler.downloadByLinks(0, $links.length - 1, $links);
+        });
+    }
 
-                // console.log("name:" + it.name + ",src=" + it.src);
+    /**
+     * 通过$links进行依次下载
+     *
+     * @param   {数字}    index       下标
+     * @param   {数字}    lastIndex   尾下标
+     * @param   {$数组}   $links      包含名称与链接的$数组
+     */
+    static downloadByLinks(index, lastIndex, $links) {
 
-                GM_download(it.src, it.name);
-            });
+        const it = $links[index];
+
+        GM_download({
+            url: it.src,
+            name: it.name,
+            onload: () => {
+
+                if (index <= lastIndex) {
+
+                    PictureHandler.downloadByLinks(index + 1, lastIndex, $links);
+                }
+            }
         });
     }
 
@@ -806,7 +825,7 @@ class PictureHandler {
      */
     static async convertLargePhoto($ul, photo_ids) {
 
-        const photo_ids_fix = await Promise.all($(photo_ids).map(function(i, it) {
+        let photo_ids_fix = await Promise.all($(photo_ids).map(function(i, it) {
 
             return new Promise((resolve, reject) => {
 
@@ -856,6 +875,9 @@ class PictureHandler {
                 return `${it}.jpg`;
             });
         }).get());
+
+        // 去除重复
+        photo_ids_fix = Array.from(new Set(photo_ids_fix));
 
         Core.log("总图片(fix)：");
         Core.log(photo_ids_fix);
