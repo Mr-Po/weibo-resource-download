@@ -15,6 +15,7 @@
 [https://greasyfork.org/zh-CN/scripts/383402](https://greasyfork.org/zh-CN/scripts/383402)
 
 此脚本开源，开源地址：
+
 [https://github.com/Mr-Po/weibo-resource-download](https://github.com/Mr-Po/weibo-resource-download)
 
 * * *
