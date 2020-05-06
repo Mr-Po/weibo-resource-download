@@ -8,9 +8,14 @@
 * 热门微博(d.weibo.com)
 * 微博搜索(s.weibo.com)
 
-可通过以下途径安装：
+* * *
+
+此脚本可通过以下链接安装：
 
 [https://greasyfork.org/zh-CN/scripts/383402](https://greasyfork.org/zh-CN/scripts/383402)
+
+此脚本开源，开源地址：
+[https://github.com/Mr-Po/weibo-resource-download](https://github.com/Mr-Po/weibo-resource-download)
 
 * * *
 
@@ -44,6 +49,6 @@
 ##### 附录 - 参数配置
 ![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/06.png)
 ![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/07.png)
-![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/08.png)
+![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/09.png)
 
 PS：一般修改 **resourceName**（资源名称）、**zipName**（打包名称）即可。
