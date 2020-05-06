@@ -40,14 +40,19 @@ class Config {
      * @param  {字符串} resource_id  资源原始名称（如：0065x5rwly1g3c6exw0a2j30u012utyg）
      * @param  {字符串} no           序号（如：01）
      * @param  {字符串} mdeia_type   媒体类型（如：P）
+     * @param  {字符串} wb_root_user_name  微博根用户名
+     * @param  {字符串} wb_root_user_id    微博根用户ID
+     * @param  {字符串} wb_root_url        微博根链接
+     * @param  {字符串} wb_root_id         微博根ID
      * 
      * @return {字符串}              由以上字符串组合而成的名称
      */
     static getResourceName(wb_user_name, wb_user_id, wb_id, wb_url,
-        resource_id, no, mdeia_type) {
+        resource_id, no, mdeia_type,
+        wb_root_user_name, wb_root_user_id, wb_root_url, wb_root_id) {
 
         const template = Config.getValue("resourceName",
-            () => "{{wb_user_name}}-{{wb_id}}-{{no}}"
+            () => "{{wb_root_user_name}}-{{wb_root_id}}-{{no}}"
         );
 
         return Mustache.render(template, {
@@ -57,7 +62,11 @@ class Config {
             wb_url: wb_url,
             resource_id: resource_id,
             no: no,
-            mdeia_type: mdeia_type
+            mdeia_type: mdeia_type,
+            wb_root_user_name: wb_root_user_name,
+            wb_root_user_id: wb_root_user_id,
+            wb_root_url: wb_root_url,
+            wb_root_id: wb_root_id
         });
     }
 
@@ -78,20 +87,29 @@ class Config {
      * @param  {字符串} wb_user_id   微博用户ID（如：5578564422）
      * @param  {字符串} wb_id        微博ID（如：4375413591293810）
      * @param  {字符串} wb_url       微博地址（如：1871821935_Ilt7yCnvt）
+     * @param  {字符串} wb_root_user_name  微博根用户名
+     * @param  {字符串} wb_root_user_id    微博根用户ID
+     * @param  {字符串} wb_root_url        微博根链接
+     * @param  {字符串} wb_root_id         微博根ID
      * 
      * @return {字符串}              由以上字符串组合而成的名称
      */
-    static getZipName(wb_user_name, wb_user_id, wb_id, wb_url) {
+    static getZipName(wb_user_name, wb_user_id, wb_id, wb_url,
+        wb_root_user_name, wb_root_user_id, wb_root_url, wb_root_id) {
 
         const template = Config.getValue("zipName",
-            () => "{{wb_user_name}}-{{wb_id}}"
+            () => "{{wb_root_user_name}}-{{wb_root_id}}"
         );
 
         return Mustache.render(template, {
             wb_user_name: wb_user_name,
             wb_user_id: wb_user_id,
             wb_id: wb_id,
-            wb_url: wb_url
+            wb_url: wb_url,
+            wb_root_user_name: wb_root_user_name,
+            wb_root_user_id: wb_root_user_id,
+            wb_root_url: wb_root_url,
+            wb_root_id: wb_root_id
         });
     }
 

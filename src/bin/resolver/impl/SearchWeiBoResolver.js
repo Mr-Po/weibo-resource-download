@@ -9,9 +9,9 @@ Interface.impl(SearchWeiBoResolver, WeiBoResolver, {
     getOperationButton: () => $(`div .menu a:not(.${Config.handledWeiBoCardClass})`),
     getOperationList: $operationButton => $operationButton.parents(".menu").find("ul"),
     get9PhotoImgs: $ul => $ul.parents(".card-wrap").find(".media.media-piclist img"),
-    get9PhotoOver: $ul => new Promise((resolve, reject) => {resolve([]);}), //搜索微博不会展示9+图片
+    get9PhotoOver: $ul => new Promise((resolve, reject) => { resolve([]); }), //搜索微博不会展示9+图片
     getLivePhotoContainer: $ul => $(null),
-    getWeiBoCard: $ul => {
+    getWeiBoCard: ($ul, isRoot) => {
 
         const $content = $ul.parents(".content");
 
@@ -19,67 +19,97 @@ Interface.impl(SearchWeiBoResolver, WeiBoResolver, {
 
         let $content_node;
 
-        if ($card_content.length == 0) { // 这不是转发微博
+        if ($card_content.length == 1 && isRoot) { // 这是转发微博 && 需要根
 
-            $content_node = $content;
+            $content_node = $card_content;
 
         } else {
 
-            $content_node = $card_content;
+            $content_node = $content;
         }
 
         return $content_node;
     },
     getWeiBoInfo: $ul => {
 
-        return SearchWeiBoResolver.getWeiBoCard($ul).find("a.name").first();
+        return SearchWeiBoResolver.getWeiBoCard($ul, false).find("a.name").first();
     },
-    getWeiBoId: $ul => {
+    getRootWeiBoInfo: $ul => {
 
-        const action_data = $ul.parents(".card-wrap").find(".card-act li:eq(1) a").attr("action-data");
+        return SearchWeiBoResolver.getWeiBoCard($ul, true).find("a.name").first();
+    },
+    getWeiBoId: ($ul, $info, isRoot) => {
 
-        const rootmid_regex = action_data.match(/rootmid=(\d+)&/);
+        const action_data = $info.parents(".card-wrap")
+            .find(".card-act li:eq(1) a").attr("action-data");
+
+        const rootmid_regex = action_data.match(/&rootmid=(\d+)&/);
 
         let mid;
 
-        if (rootmid_regex) { // 这是转发微博
+        if (rootmid_regex && isRoot) { // 这是转发微博 && 需要根
 
             mid = rootmid_regex[1];
 
         } else {
 
-            mid = action_data.match(/mid=(\d+)&/)[1];
+            mid = action_data.match(/[&\d]mid=(\d+)&/)[1];
         }
+
+        Core.log(`得到根【${isRoot}】的微博ID为：${mid}`);
 
         return mid;
     },
-    getWeiBoUserId: $ul => {
-
-        const $info = SearchWeiBoResolver.getWeiBoInfo($ul);
+    getWeiBoUserId: ($ul, $info, isRoot) => {
 
         const user_id = $info.attr("href").match(/weibo\.com\/[u\/]{0,2}(\d+)/)[1].trim();
 
-        Core.log(`得到的微博ID为：${user_id}`);
+        Core.log(`得到根【${isRoot}】的微博用户ID为：${user_id}`);
 
         return user_id;
     },
-    getWeiBoUserName: $ul => {
+    getWeiBoUserName: ($ul, $info, isRoot) => {
 
-        const $info = SearchWeiBoResolver.getWeiBoInfo($ul);
+        let name = $info.attr("nick-name");
 
-        const name = $info.text().trim();
+        // 不存在
+        if (!name) {
+            name = $info.text();
+        }
 
-        Core.log(`得到的名称为：${name}`);
+        name = name.trim();
+
+        Core.log(`得到根【${isRoot}】的名称为：${name}`);
 
         return name;
     },
-    getWeiBoUrl: $ul => {
+    getWeiBoUrl: ($ul, isRoot) => {
 
-        const $card = SearchWeiBoResolver.getWeiBoCard($ul);
+        const $card = SearchWeiBoResolver.getWeiBoCard($ul, isRoot);
 
-        const url = $card.find(".from a").attr("href").match(/weibo\.com\/(\d+\/\w+)\?/)[1].trim();
+        const $froms = $card.find(".from");
 
-        Core.log(`得到的地址为：${url}`);
+        let $a;
+
+        if ($froms.length == 2) { // 转发微博
+
+            if (isRoot) { // 需要根
+
+                $a = $($froms[0]).find("a");
+
+            } else {
+
+                $a = $($froms[1]).find("a");
+            }
+
+        } else {
+
+            $a = $($froms[0]).find("a");
+        }
+
+        const url = $a.attr("href").match(/weibo\.com\/(\d+\/\w+)\?/)[1].trim();
+
+        Core.log(`得到根【${isRoot}】微博的地址为：${url}`);
 
         return url.replace("\/", "_");
     },

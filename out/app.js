@@ -31,6 +31,7 @@
 // ==/UserScript==
 
 // @更新日志
+// v2.4     2020-05-06      1、新增root命名参数
 // v2.3.1   2020-04-27      1、优化图标资源加载
 // v2.3     2020-04-27      1、修复视频下载未默认最高清晰度的bug；2、修复逐个下载最多10张的bug；3、修复部分情况下，图片重复的bug。
 // v2.2     2020-01-12      1、更新9+图片解析策略。
@@ -84,14 +85,19 @@ class Config {
      * @param  {字符串} resource_id  资源原始名称（如：0065x5rwly1g3c6exw0a2j30u012utyg）
      * @param  {字符串} no           序号（如：01）
      * @param  {字符串} mdeia_type   媒体类型（如：P）
+     * @param  {字符串} wb_root_user_name  微博根用户名
+     * @param  {字符串} wb_root_user_id    微博根用户ID
+     * @param  {字符串} wb_root_url        微博根链接
+     * @param  {字符串} wb_root_id         微博根ID
      * 
      * @return {字符串}              由以上字符串组合而成的名称
      */
     static getResourceName(wb_user_name, wb_user_id, wb_id, wb_url,
-        resource_id, no, mdeia_type) {
+        resource_id, no, mdeia_type,
+        wb_root_user_name, wb_root_user_id, wb_root_url, wb_root_id) {
 
         const template = Config.getValue("resourceName",
-            () => "{{wb_user_name}}-{{wb_id}}-{{no}}"
+            () => "{{wb_root_user_name}}-{{wb_root_id}}-{{no}}"
         );
 
         return Mustache.render(template, {
@@ -101,7 +107,11 @@ class Config {
             wb_url: wb_url,
             resource_id: resource_id,
             no: no,
-            mdeia_type: mdeia_type
+            mdeia_type: mdeia_type,
+            wb_root_user_name: wb_root_user_name,
+            wb_root_user_id: wb_root_user_id,
+            wb_root_url: wb_root_url,
+            wb_root_id: wb_root_id
         });
     }
 
@@ -122,20 +132,29 @@ class Config {
      * @param  {字符串} wb_user_id   微博用户ID（如：5578564422）
      * @param  {字符串} wb_id        微博ID（如：4375413591293810）
      * @param  {字符串} wb_url       微博地址（如：1871821935_Ilt7yCnvt）
+     * @param  {字符串} wb_root_user_name  微博根用户名
+     * @param  {字符串} wb_root_user_id    微博根用户ID
+     * @param  {字符串} wb_root_url        微博根链接
+     * @param  {字符串} wb_root_id         微博根ID
      * 
      * @return {字符串}              由以上字符串组合而成的名称
      */
-    static getZipName(wb_user_name, wb_user_id, wb_id, wb_url) {
+    static getZipName(wb_user_name, wb_user_id, wb_id, wb_url,
+        wb_root_user_name, wb_root_user_id, wb_root_url, wb_root_id) {
 
         const template = Config.getValue("zipName",
-            () => "{{wb_user_name}}-{{wb_id}}"
+            () => "{{wb_root_user_name}}-{{wb_root_id}}"
         );
 
         return Mustache.render(template, {
             wb_user_name: wb_user_name,
             wb_user_id: wb_user_id,
             wb_id: wb_id,
-            wb_url: wb_url
+            wb_url: wb_url,
+            wb_root_user_name: wb_root_user_name,
+            wb_root_user_id: wb_root_user_id,
+            wb_root_url: wb_root_url,
+            wb_root_id: wb_root_id
         });
     }
 
@@ -314,17 +333,18 @@ class Link {
  */
 const WeiBoResolver = new Interface("SearchWeiBoResolver",
     [
-        "getOperationButton",// 得到操作按钮[↓]
-        "getOperationList",// 根据操作按钮，得到操作列表
-        "get9PhotoImgs",// 返回九宫格图片的img$控件数组（自带后缀）
-        "get9PhotoOver",// 得到超过部分的图片的id数组(无后缀)
+        "getOperationButton", // 得到操作按钮[↓]
+        "getOperationList", // 根据操作按钮，得到操作列表
+        "get9PhotoImgs", // 返回九宫格图片的img$控件数组（自带后缀）
+        "get9PhotoOver", // 得到超过部分的图片的id数组(无后缀)
         "getLivePhotoContainer",
-        "getWeiBoCard",// 这条微博（若为转发微博，则取根微博）
-        "getWeiBoInfo",// 这条微博(发布者)信息
-        "getWeiBoId",// 此条微博的ID
-        "getWeiBoUserId",
-        "getWeiBoUserName",
-        "getWeiBoUrl",// 此条微博的地址
+        "getWeiBoCard", // 这条微博（若为转发微博，则取根微博）
+        "getWeiBoInfo", // 这条微博(发布者)信息
+        "getRootWeiBoInfo", // 这条微博(【根】发布者)信息
+        "getWeiBoId", // 此条微博的ID
+        "getWeiBoUserId", // 微博发送者的Id
+        "getWeiBoUserName", // 微博发送者的名称
+        "getWeiBoUrl", // 此条微博的地址
         "getProgressContainer",
         "getVideoBox",
         "geiVideoSrc"
@@ -340,9 +360,9 @@ Interface.impl(SearchWeiBoResolver, WeiBoResolver, {
     getOperationButton: () => $(`div .menu a:not(.${Config.handledWeiBoCardClass})`),
     getOperationList: $operationButton => $operationButton.parents(".menu").find("ul"),
     get9PhotoImgs: $ul => $ul.parents(".card-wrap").find(".media.media-piclist img"),
-    get9PhotoOver: $ul => new Promise((resolve, reject) => {resolve([]);}), //搜索微博不会展示9+图片
+    get9PhotoOver: $ul => new Promise((resolve, reject) => { resolve([]); }), //搜索微博不会展示9+图片
     getLivePhotoContainer: $ul => $(null),
-    getWeiBoCard: $ul => {
+    getWeiBoCard: ($ul, isRoot) => {
 
         const $content = $ul.parents(".content");
 
@@ -350,67 +370,97 @@ Interface.impl(SearchWeiBoResolver, WeiBoResolver, {
 
         let $content_node;
 
-        if ($card_content.length == 0) { // 这不是转发微博
+        if ($card_content.length == 1 && isRoot) { // 这是转发微博 && 需要根
 
-            $content_node = $content;
+            $content_node = $card_content;
 
         } else {
 
-            $content_node = $card_content;
+            $content_node = $content;
         }
 
         return $content_node;
     },
     getWeiBoInfo: $ul => {
 
-        return SearchWeiBoResolver.getWeiBoCard($ul).find("a.name").first();
+        return SearchWeiBoResolver.getWeiBoCard($ul, false).find("a.name").first();
     },
-    getWeiBoId: $ul => {
+    getRootWeiBoInfo: $ul => {
 
-        const action_data = $ul.parents(".card-wrap").find(".card-act li:eq(1) a").attr("action-data");
+        return SearchWeiBoResolver.getWeiBoCard($ul, true).find("a.name").first();
+    },
+    getWeiBoId: ($ul, $info, isRoot) => {
 
-        const rootmid_regex = action_data.match(/rootmid=(\d+)&/);
+        const action_data = $info.parents(".card-wrap")
+            .find(".card-act li:eq(1) a").attr("action-data");
+
+        const rootmid_regex = action_data.match(/&rootmid=(\d+)&/);
 
         let mid;
 
-        if (rootmid_regex) { // 这是转发微博
+        if (rootmid_regex && isRoot) { // 这是转发微博 && 需要根
 
             mid = rootmid_regex[1];
 
         } else {
 
-            mid = action_data.match(/mid=(\d+)&/)[1];
+            mid = action_data.match(/[&\d]mid=(\d+)&/)[1];
         }
+
+        Core.log(`得到根【${isRoot}】的微博ID为：${mid}`);
 
         return mid;
     },
-    getWeiBoUserId: $ul => {
-
-        const $info = SearchWeiBoResolver.getWeiBoInfo($ul);
+    getWeiBoUserId: ($ul, $info, isRoot) => {
 
         const user_id = $info.attr("href").match(/weibo\.com\/[u\/]{0,2}(\d+)/)[1].trim();
 
-        Core.log(`得到的微博ID为：${user_id}`);
+        Core.log(`得到根【${isRoot}】的微博用户ID为：${user_id}`);
 
         return user_id;
     },
-    getWeiBoUserName: $ul => {
+    getWeiBoUserName: ($ul, $info, isRoot) => {
 
-        const $info = SearchWeiBoResolver.getWeiBoInfo($ul);
+        let name = $info.attr("nick-name");
 
-        const name = $info.text().trim();
+        // 不存在
+        if (!name) {
+            name = $info.text();
+        }
 
-        Core.log(`得到的名称为：${name}`);
+        name = name.trim();
+
+        Core.log(`得到根【${isRoot}】的名称为：${name}`);
 
         return name;
     },
-    getWeiBoUrl: $ul => {
+    getWeiBoUrl: ($ul, isRoot) => {
 
-        const $card = SearchWeiBoResolver.getWeiBoCard($ul);
+        const $card = SearchWeiBoResolver.getWeiBoCard($ul, isRoot);
 
-        const url = $card.find(".from a").attr("href").match(/weibo\.com\/(\d+\/\w+)\?/)[1].trim();
+        const $froms = $card.find(".from");
 
-        Core.log(`得到的地址为：${url}`);
+        let $a;
+
+        if ($froms.length == 2) { // 转发微博
+
+            if (isRoot) { // 需要根
+
+                $a = $($froms[0]).find("a");
+
+            } else {
+
+                $a = $($froms[1]).find("a");
+            }
+
+        } else {
+
+            $a = $($froms[0]).find("a");
+        }
+
+        const url = $a.attr("href").match(/weibo\.com\/(\d+\/\w+)\?/)[1].trim();
+
+        Core.log(`得到根【${isRoot}】微博的地址为：${url}`);
 
         return url.replace("\/", "_");
     },
@@ -513,20 +563,18 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
         });
     },
     getLivePhotoContainer: $ul => $ul.parents(".WB_feed_detail").find(".WB_media_a"),
-    getWeiBoCard: $ul => {
+    getWeiBoCard: ($ul, isRoot) => {
 
+        // 此条微博
         const $box = $ul.parents("div.WB_feed_detail");
 
+        // 根微博
         const $box_expand = $box.find(".WB_feed_expand");
 
-        let $box_node;
+        let $box_node = $box;
 
-        // 这不是一条转发微博
-        if ($box_expand.length == 0) {
-
-            $box_node = $box;
-
-        } else { // 这是一条转发微博
+        // 这是一条转发微博 && 并且需要取根
+        if ($box_expand.length == 1 && isRoot) {
 
             $box_node = $box_expand;
         }
@@ -535,11 +583,13 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
     },
     getWeiBoInfo: $ul => {
 
-        return MyWeiBoResolver.getWeiBoCard($ul).find("div.WB_info a").first();
+        return MyWeiBoResolver.getWeiBoCard($ul, false).find("div.WB_detail div.WB_info a").first();
     },
-    getWeiBoId: $ul => {
+    getRootWeiBoInfo: $ul => {
 
-        const $info = MyWeiBoResolver.getWeiBoInfo($ul);
+        return MyWeiBoResolver.getWeiBoCard($ul, true).find("div.WB_info a").first();
+    },
+    getWeiBoId: ($ul, $info, isRoot) => {
 
         const id_regex = $info.attr("suda-uatrack").match(/value=\w+:(\d+)/);
 
@@ -554,33 +604,39 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
             id = $ul.parents(".WB_feed_detail").parents(".WB_cardwrap").attr("mid").trim();
         }
 
-        Core.log(`得到的微博ID为：${id}`);
+        Core.log(`得到根【${isRoot}】的微博ID为：${id}`);
 
         return id;
     },
-    getWeiBoUserId: $ul => {
-
-        const $info = MyWeiBoResolver.getWeiBoInfo($ul);
+    getWeiBoUserId: ($ul, $info, isRoot) => {
 
         const user_id = $info.attr("usercard").match(/id=(\d+)/)[1].trim();
 
-        Core.log(`得到的用户微博ID为：${user_id}`);
+        Core.log(`得到根【${isRoot}】的微博用户ID为：${user_id}`);
 
         return user_id;
     },
-    getWeiBoUserName: $ul => {
+    getWeiBoUserName: ($ul, $info, isRoot) => {
 
-        const $info = MyWeiBoResolver.getWeiBoInfo($ul);
+        // 适用于根微博
+        let name = $info.attr("nick-name");
 
-        const name = $info.text().trim();
+        // 不存在
+        if (!name) {
+            name = $info.text();
+        }
 
-        Core.log(`得到的名称为：${name}`);
+        name = name.trim();
+
+        Core.log(`得到根【${isRoot}】的名称为：${name}`);
 
         return name;
     },
-    getWeiBoUrl: $ul => {
+    getWeiBoUrl: ($ul, isRoot) => {
 
-        const $li_forward = $ul.parents(".WB_feed_detail").parents("div.WB_cardwrap")
+        const $li_forward = $ul
+            .parents(".WB_feed_detail")
+            .parents("div.WB_cardwrap")
             .find(".WB_feed_handle .WB_row_line li:eq(1) a");
 
         const action_data = $li_forward.attr("action-data");
@@ -589,16 +645,16 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
 
         let url;
 
-        if (rooturl_regex) { // 这是转发微博
+        if (rooturl_regex && isRoot) { // 这是转发微博 && 需要根
 
             url = rooturl_regex[1].trim();
 
         } else {
 
-            url = action_data.match(/url=https:\/\/weibo\.com\/(\d+\/\w+)&/)[1].trim();
+            url = action_data.match(/&url=https:\/\/weibo\.com\/(\d+\/\w+)&/)[1].trim();
         }
 
-        Core.log(`得到的此条微博地址为：${url}`);
+        Core.log(`得到根【${isRoot}】微博的地址为：${url}`);
 
         return url.replace("\/", "_");
     },
@@ -626,7 +682,7 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
                 const src = source.substring(source.indexOf("=") + 1);
 
                 // 是一个链接
-                if(src.indexOf("http")==0){
+                if (src.indexOf("http") == 0) {
                     return src;
                 }
             }
@@ -828,11 +884,15 @@ class PictureHandler {
     /**
      * 转换为大图链接
      *
-     * @param  {$控件} $ul        操作列表
-     * @param  {数组}  photo_ids  图片id数组（可能无后缀）
-     * @return {Link数组}       链接集，可能为null
+     * @param  {$控件}    $ul         操作列表
+     * @param  {数组}     photo_ids   图片id数组（可能无后缀）
+     * @return {Link数组}             链接集，可能为null
      */
     static async convertLargePhoto($ul, photo_ids) {
+
+        const server = Core.getLargeImageServer($ul);
+
+        Core.log(`获取到服务器：${server}`);
 
         let photo_ids_fix = await Promise.all($(photo_ids).map(function(i, it) {
 
@@ -848,7 +908,7 @@ class PictureHandler {
                     // 请求，不打开流，只需要头信息
                     GM_xmlhttpRequest({
                         method: 'GET',
-                        url: `http://wx2.sinaimg.cn/thumb150/${it}`,
+                        url: `http://${server}.sinaimg.cn/thumb150/${it}`,
                         timeout: Config.maxRequestTime,
                         responseType: "blob",
                         onload: function(res) {
@@ -894,7 +954,7 @@ class PictureHandler {
         return $(photo_ids_fix).map((i, it) => {
 
             // 替换为大图链接
-            const src = `http://wx2.sinaimg.cn/large/${it}`;
+            const src = `http://${server}.sinaimg.cn/large/${it}`;
 
             Core.log(src);
 
@@ -1258,7 +1318,9 @@ class Core {
      */
     static resolveWeiBoCard($operationButton) {
 
-        const $ul = Core.getWeiBoResolver().getOperationList($operationButton);
+        const weiboResolver = Core.getWeiBoResolver();
+
+        const $ul = weiboResolver.getOperationList($operationButton);
 
         PictureHandler.handlePictureIfNeed($ul);
         VideoHandler.handleVideoIfNeed($ul);
@@ -1343,12 +1405,24 @@ class Core {
 
         const weiBoResolver = Core.getWeiBoResolver();
 
-        const wb_user_name = weiBoResolver.getWeiBoUserName($ul);
-        const wb_user_id = weiBoResolver.getWeiBoUserId($ul);
-        const wb_id = weiBoResolver.getWeiBoId($ul);
-        const wb_url = weiBoResolver.getWeiBoUrl($ul);
 
-        const name = Config.getZipName(wb_user_name, wb_user_id, wb_id, wb_url);
+        const $info = weiBoResolver.getWeiBoInfo($ul);
+        const wb_id = weiBoResolver.getWeiBoId($ul, $info, false);
+        const wb_user_id = weiBoResolver.getWeiBoUserId($ul, $info, false);
+        const wb_user_name = weiBoResolver.getWeiBoUserName($ul, $info, false);
+        const wb_url = weiBoResolver.getWeiBoUrl($ul, false);
+
+        const $root_info = weiBoResolver.getRootWeiBoInfo($ul);
+        const wb_root_id = weiBoResolver.getWeiBoId($ul, $root_info, true);
+        const wb_root_user_id = weiBoResolver.getWeiBoUserId($ul, $root_info, true);
+        const wb_root_user_name = weiBoResolver.getWeiBoUserName($ul, $root_info, true);
+        const wb_root_url = weiBoResolver.getWeiBoUrl($ul, true);
+
+        const name = Config.getZipName(
+            wb_user_name, wb_user_id,
+            wb_id, wb_url,
+            wb_root_user_name, wb_root_user_id, wb_root_url, wb_root_id
+        );
 
         return name;
     }
@@ -1395,11 +1469,20 @@ class Core {
 
         const weiBoResolver = Core.getWeiBoResolver();
 
-        const wb_user_name = weiBoResolver.getWeiBoUserName($ul);
-        const wb_user_id = weiBoResolver.getWeiBoUserId($ul);
-        const wb_id = weiBoResolver.getWeiBoId($ul);
-        const wb_url = weiBoResolver.getWeiBoUrl($ul);
         const resource_id = Core.getPathName(src);
+
+
+        const $info = weiBoResolver.getWeiBoInfo($ul);
+        const wb_id = weiBoResolver.getWeiBoId($ul, $info, false);
+        const wb_user_id = weiBoResolver.getWeiBoUserId($ul, $info, false);
+        const wb_user_name = weiBoResolver.getWeiBoUserName($ul, $info, false);
+        const wb_url = weiBoResolver.getWeiBoUrl($ul, false);
+
+        const $root_info = weiBoResolver.getRootWeiBoInfo($ul);
+        const wb_root_id = weiBoResolver.getWeiBoId($ul, $root_info, true);
+        const wb_root_user_id = weiBoResolver.getWeiBoUserId($ul, $root_info, true);
+        const wb_root_user_name = weiBoResolver.getWeiBoUserName($ul, $root_info, true);
+        const wb_root_url = weiBoResolver.getWeiBoUrl($ul, true);
 
         // 修正，从1开始
         index++;
@@ -1413,8 +1496,10 @@ class Core {
 
         const postfix = Core.getPathPostfix(src);
 
-        const name = Config.getResourceName(wb_user_name, wb_user_id, wb_id, wb_url,
-            resource_id, no, media_type) + postfix;
+        const name = Config.getResourceName(
+            wb_user_name, wb_user_id, wb_id, wb_url,
+            resource_id, no, media_type,
+            wb_root_user_name, wb_root_user_id, wb_root_url, wb_root_id) + postfix;
 
         return name;
     }
@@ -1427,6 +1512,41 @@ class Core {
         if (Config.isDebug) {
             console.log(msg);
         }
+    }
+
+    /**
+     * 得到大图服务器
+     * 
+     * @param  {$控件}    $ul         操作列表
+     * @return {字符串}   服务器
+     */
+    static getLargeImageServer($ul) {
+
+        const weiBoResolver = Core.getWeiBoResolver();
+
+        const $imgs = weiBoResolver.get9PhotoImgs($ul);
+
+        const src = $($imgs[0]).attr("src");
+
+        let server;
+
+        if (src) {
+
+            const server_regex = src.match(/(wx\d)\.sinaimg\.cn/);
+
+            if (server_regex) {
+
+                server = server_regex[1];
+            }
+        }
+
+        if (!server) {
+
+            // 缺省服务器
+            server = "wx2";
+        }
+
+        return server;
     }
 }
     setInterval(Core.handleWeiBoCard, Config.space);

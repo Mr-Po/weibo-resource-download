@@ -82,20 +82,18 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
         });
     },
     getLivePhotoContainer: $ul => $ul.parents(".WB_feed_detail").find(".WB_media_a"),
-    getWeiBoCard: $ul => {
+    getWeiBoCard: ($ul, isRoot) => {
 
+        // 此条微博
         const $box = $ul.parents("div.WB_feed_detail");
 
+        // 根微博
         const $box_expand = $box.find(".WB_feed_expand");
 
-        let $box_node;
+        let $box_node = $box;
 
-        // 这不是一条转发微博
-        if ($box_expand.length == 0) {
-
-            $box_node = $box;
-
-        } else { // 这是一条转发微博
+        // 这是一条转发微博 && 并且需要取根
+        if ($box_expand.length == 1 && isRoot) {
 
             $box_node = $box_expand;
         }
@@ -104,11 +102,13 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
     },
     getWeiBoInfo: $ul => {
 
-        return MyWeiBoResolver.getWeiBoCard($ul).find("div.WB_info a").first();
+        return MyWeiBoResolver.getWeiBoCard($ul, false).find("div.WB_detail div.WB_info a").first();
     },
-    getWeiBoId: $ul => {
+    getRootWeiBoInfo: $ul => {
 
-        const $info = MyWeiBoResolver.getWeiBoInfo($ul);
+        return MyWeiBoResolver.getWeiBoCard($ul, true).find("div.WB_info a").first();
+    },
+    getWeiBoId: ($ul, $info, isRoot) => {
 
         const id_regex = $info.attr("suda-uatrack").match(/value=\w+:(\d+)/);
 
@@ -123,33 +123,39 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
             id = $ul.parents(".WB_feed_detail").parents(".WB_cardwrap").attr("mid").trim();
         }
 
-        Core.log(`得到的微博ID为：${id}`);
+        Core.log(`得到根【${isRoot}】的微博ID为：${id}`);
 
         return id;
     },
-    getWeiBoUserId: $ul => {
-
-        const $info = MyWeiBoResolver.getWeiBoInfo($ul);
+    getWeiBoUserId: ($ul, $info, isRoot) => {
 
         const user_id = $info.attr("usercard").match(/id=(\d+)/)[1].trim();
 
-        Core.log(`得到的用户微博ID为：${user_id}`);
+        Core.log(`得到根【${isRoot}】的微博用户ID为：${user_id}`);
 
         return user_id;
     },
-    getWeiBoUserName: $ul => {
+    getWeiBoUserName: ($ul, $info, isRoot) => {
 
-        const $info = MyWeiBoResolver.getWeiBoInfo($ul);
+        // 适用于根微博
+        let name = $info.attr("nick-name");
 
-        const name = $info.text().trim();
+        // 不存在
+        if (!name) {
+            name = $info.text();
+        }
 
-        Core.log(`得到的名称为：${name}`);
+        name = name.trim();
+
+        Core.log(`得到根【${isRoot}】的名称为：${name}`);
 
         return name;
     },
-    getWeiBoUrl: $ul => {
+    getWeiBoUrl: ($ul, isRoot) => {
 
-        const $li_forward = $ul.parents(".WB_feed_detail").parents("div.WB_cardwrap")
+        const $li_forward = $ul
+            .parents(".WB_feed_detail")
+            .parents("div.WB_cardwrap")
             .find(".WB_feed_handle .WB_row_line li:eq(1) a");
 
         const action_data = $li_forward.attr("action-data");
@@ -158,16 +164,16 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
 
         let url;
 
-        if (rooturl_regex) { // 这是转发微博
+        if (rooturl_regex && isRoot) { // 这是转发微博 && 需要根
 
             url = rooturl_regex[1].trim();
 
         } else {
 
-            url = action_data.match(/url=https:\/\/weibo\.com\/(\d+\/\w+)&/)[1].trim();
+            url = action_data.match(/&url=https:\/\/weibo\.com\/(\d+\/\w+)&/)[1].trim();
         }
 
-        Core.log(`得到的此条微博地址为：${url}`);
+        Core.log(`得到根【${isRoot}】微博的地址为：${url}`);
 
         return url.replace("\/", "_");
     },
@@ -195,7 +201,7 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
                 const src = source.substring(source.indexOf("=") + 1);
 
                 // 是一个链接
-                if(src.indexOf("http")==0){
+                if (src.indexOf("http") == 0) {
                     return src;
                 }
             }

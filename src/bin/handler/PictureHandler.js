@@ -191,11 +191,15 @@ class PictureHandler {
     /**
      * 转换为大图链接
      *
-     * @param  {$控件} $ul        操作列表
-     * @param  {数组}  photo_ids  图片id数组（可能无后缀）
-     * @return {Link数组}       链接集，可能为null
+     * @param  {$控件}    $ul         操作列表
+     * @param  {数组}     photo_ids   图片id数组（可能无后缀）
+     * @return {Link数组}             链接集，可能为null
      */
     static async convertLargePhoto($ul, photo_ids) {
+
+        const server = Core.getLargeImageServer($ul);
+
+        Core.log(`获取到服务器：${server}`);
 
         let photo_ids_fix = await Promise.all($(photo_ids).map(function(i, it) {
 
@@ -211,7 +215,7 @@ class PictureHandler {
                     // 请求，不打开流，只需要头信息
                     GM_xmlhttpRequest({
                         method: 'GET',
-                        url: `http://wx2.sinaimg.cn/thumb150/${it}`,
+                        url: `http://${server}.sinaimg.cn/thumb150/${it}`,
                         timeout: Config.maxRequestTime,
                         responseType: "blob",
                         onload: function(res) {
@@ -257,7 +261,7 @@ class PictureHandler {
         return $(photo_ids_fix).map((i, it) => {
 
             // 替换为大图链接
-            const src = `http://wx2.sinaimg.cn/large/${it}`;
+            const src = `http://${server}.sinaimg.cn/large/${it}`;
 
             Core.log(src);
 

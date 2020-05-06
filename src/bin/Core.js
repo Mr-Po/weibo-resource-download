@@ -34,7 +34,9 @@ class Core {
      */
     static resolveWeiBoCard($operationButton) {
 
-        const $ul = Core.getWeiBoResolver().getOperationList($operationButton);
+        const weiboResolver = Core.getWeiBoResolver();
+
+        const $ul = weiboResolver.getOperationList($operationButton);
 
         PictureHandler.handlePictureIfNeed($ul);
         VideoHandler.handleVideoIfNeed($ul);
@@ -119,12 +121,24 @@ class Core {
 
         const weiBoResolver = Core.getWeiBoResolver();
 
-        const wb_user_name = weiBoResolver.getWeiBoUserName($ul);
-        const wb_user_id = weiBoResolver.getWeiBoUserId($ul);
-        const wb_id = weiBoResolver.getWeiBoId($ul);
-        const wb_url = weiBoResolver.getWeiBoUrl($ul);
 
-        const name = Config.getZipName(wb_user_name, wb_user_id, wb_id, wb_url);
+        const $info = weiBoResolver.getWeiBoInfo($ul);
+        const wb_id = weiBoResolver.getWeiBoId($ul, $info, false);
+        const wb_user_id = weiBoResolver.getWeiBoUserId($ul, $info, false);
+        const wb_user_name = weiBoResolver.getWeiBoUserName($ul, $info, false);
+        const wb_url = weiBoResolver.getWeiBoUrl($ul, false);
+
+        const $root_info = weiBoResolver.getRootWeiBoInfo($ul);
+        const wb_root_id = weiBoResolver.getWeiBoId($ul, $root_info, true);
+        const wb_root_user_id = weiBoResolver.getWeiBoUserId($ul, $root_info, true);
+        const wb_root_user_name = weiBoResolver.getWeiBoUserName($ul, $root_info, true);
+        const wb_root_url = weiBoResolver.getWeiBoUrl($ul, true);
+
+        const name = Config.getZipName(
+            wb_user_name, wb_user_id,
+            wb_id, wb_url,
+            wb_root_user_name, wb_root_user_id, wb_root_url, wb_root_id
+        );
 
         return name;
     }
@@ -171,11 +185,20 @@ class Core {
 
         const weiBoResolver = Core.getWeiBoResolver();
 
-        const wb_user_name = weiBoResolver.getWeiBoUserName($ul);
-        const wb_user_id = weiBoResolver.getWeiBoUserId($ul);
-        const wb_id = weiBoResolver.getWeiBoId($ul);
-        const wb_url = weiBoResolver.getWeiBoUrl($ul);
         const resource_id = Core.getPathName(src);
+
+
+        const $info = weiBoResolver.getWeiBoInfo($ul);
+        const wb_id = weiBoResolver.getWeiBoId($ul, $info, false);
+        const wb_user_id = weiBoResolver.getWeiBoUserId($ul, $info, false);
+        const wb_user_name = weiBoResolver.getWeiBoUserName($ul, $info, false);
+        const wb_url = weiBoResolver.getWeiBoUrl($ul, false);
+
+        const $root_info = weiBoResolver.getRootWeiBoInfo($ul);
+        const wb_root_id = weiBoResolver.getWeiBoId($ul, $root_info, true);
+        const wb_root_user_id = weiBoResolver.getWeiBoUserId($ul, $root_info, true);
+        const wb_root_user_name = weiBoResolver.getWeiBoUserName($ul, $root_info, true);
+        const wb_root_url = weiBoResolver.getWeiBoUrl($ul, true);
 
         // 修正，从1开始
         index++;
@@ -189,8 +212,10 @@ class Core {
 
         const postfix = Core.getPathPostfix(src);
 
-        const name = Config.getResourceName(wb_user_name, wb_user_id, wb_id, wb_url,
-            resource_id, no, media_type) + postfix;
+        const name = Config.getResourceName(
+            wb_user_name, wb_user_id, wb_id, wb_url,
+            resource_id, no, media_type,
+            wb_root_user_name, wb_root_user_id, wb_root_url, wb_root_id) + postfix;
 
         return name;
     }
@@ -203,5 +228,40 @@ class Core {
         if (Config.isDebug) {
             console.log(msg);
         }
+    }
+
+    /**
+     * 得到大图服务器
+     * 
+     * @param  {$控件}    $ul         操作列表
+     * @return {字符串}   服务器
+     */
+    static getLargeImageServer($ul) {
+
+        const weiBoResolver = Core.getWeiBoResolver();
+
+        const $imgs = weiBoResolver.get9PhotoImgs($ul);
+
+        const src = $($imgs[0]).attr("src");
+
+        let server;
+
+        if (src) {
+
+            const server_regex = src.match(/(wx\d)\.sinaimg\.cn/);
+
+            if (server_regex) {
+
+                server = server_regex[1];
+            }
+        }
+
+        if (!server) {
+
+            // 缺省服务器
+            server = "wx2";
+        }
+
+        return server;
     }
 }
