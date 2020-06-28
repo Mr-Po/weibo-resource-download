@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         微博 [ 图片 | 视频 ] 下载
 // @namespace    http://tampermonkey.net/
-// @version      2.4
+// @version      2.4.1
 // @description  下载微博(weibo.com)的图片和视频。（支持LivePhoto、短视频、动/静图(9+)，可以打包下载）
 // @author       Mr.Po
 // @match        https://weibo.com/*
@@ -31,6 +31,7 @@
 // ==/UserScript==
 
 // @更新日志
+// v2.4.1   2020-06-28      1、修复使用“resource_id”命名时，出现重复后缀的bug。
 // v2.4     2020-05-06      1、新增wb_root_*命名参数。
 // v2.3.1   2020-04-27      1、优化图标资源加载。
 // v2.3     2020-04-27      1、修复视频下载未默认最高清晰度的bug；2、修复逐个下载最多10张的bug；3、修复部分情况下，图片重复的bug。
@@ -1428,13 +1429,25 @@ class Core {
     }
 
     /**
-     * 得到资源原始名称
-     * @param  {字符串} path 路径
-     * @return {字符串}     名称（含后缀）
+     * 得到资源原始名称（不含后缀）
+     * @param  {字符串}    path 路径
+     * @return {字符串}    名称（不含后缀）
      */
     static getPathName(path) {
 
-        const name = path.substring(path.lastIndexOf("/") + 1);
+        const start = path.lastIndexOf("/") + 1;
+        const end = path.lastIndexOf(".");
+
+        let name;
+
+        if (end > start) {
+
+            name = path.substring(start, end);
+
+        } else {
+
+            name = path.substring(start);
+        }
 
         Core.log(`截得名称为：${name}`);
 

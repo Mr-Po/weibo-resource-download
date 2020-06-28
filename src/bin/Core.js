@@ -144,13 +144,25 @@ class Core {
     }
 
     /**
-     * 得到资源原始名称
-     * @param  {字符串} path 路径
-     * @return {字符串}     名称（含后缀）
+     * 得到资源原始名称（不含后缀）
+     * @param  {字符串}    path 路径
+     * @return {字符串}    名称（不含后缀）
      */
     static getPathName(path) {
 
-        const name = path.substring(path.lastIndexOf("/") + 1);
+        const start = path.lastIndexOf("/") + 1;
+        const end = path.lastIndexOf(".");
+
+        let name;
+
+        if (end > start) {
+
+            name = path.substring(start, end);
+
+        } else {
+
+            name = path.substring(start);
+        }
 
         Core.log(`截得名称为：${name}`);
 
