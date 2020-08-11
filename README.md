@@ -50,6 +50,6 @@
 ##### 附录 - 参数配置
 ![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/06.png)
 ![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/07.png)
-![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/09.png)
+![](https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/media/10.png)
 
 PS：一般修改 **resourceName**（资源名称）、**zipName**（打包名称）即可。
