@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         微博 [ 图片 | 视频 ] 下载
 // @namespace    http://tampermonkey.net/
-// @version      2.4.1
+// @version      2.4.2
 // @description  下载微博(weibo.com)的图片和视频。（支持LivePhoto、短视频、动/静图(9+)，可以打包下载）
 // @author       Mr.Po
 // @match        https://weibo.com/*
 // @match        https://www.weibo.com/*
 // @match        https://d.weibo.com/*
 // @match        https://s.weibo.com/*
-// @require      https://code.jquery.com/jquery-1.11.0.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.0/jquery.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.0/jszip.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js
 // @require      https://cdn.staticfile.org/mustache.js/3.1.0/mustache.min.js
@@ -31,6 +31,7 @@
 // ==/UserScript==
 
 // @更新日志
+// v2.4.2   2020-08-11      1、新增“操作提示”开关；2、更新jquery来源。
 // v2.4.1   2020-06-28      1、修复使用“resource_id”命名时，出现重复后缀的bug。
 // v2.4     2020-05-06      1、新增wb_root_*命名参数。
 // v2.3.1   2020-04-27      1、优化图标资源加载。

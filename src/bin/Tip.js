@@ -6,11 +6,15 @@
 class Tip {
 
     static tip(text, iconName) {
-        GM_notification({
-            text: text,
-            image: GM_getResourceURL(iconName),
-            timeout: 3000,
-        });
+
+        if (Config.isTip) {
+
+            GM_notification({
+                text: text,
+                image: GM_getResourceURL(iconName),
+                timeout: 3000,
+            });
+        }
     }
 
     static info(text) {

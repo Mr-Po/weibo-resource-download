@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         微博 [ 图片 | 视频 ] 下载
 // @namespace    http://tampermonkey.net/
-// @version      2.4.1
+// @version      2.4.2
 // @description  下载微博(weibo.com)的图片和视频。（支持LivePhoto、短视频、动/静图(9+)，可以打包下载）
 // @author       Mr.Po
 // @match        https://weibo.com/*
 // @match        https://www.weibo.com/*
 // @match        https://d.weibo.com/*
 // @match        https://s.weibo.com/*
-// @require      https://code.jquery.com/jquery-1.11.0.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.0/jquery.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.0/jszip.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js
 // @require      https://cdn.staticfile.org/mustache.js/3.1.0/mustache.min.js
@@ -31,6 +31,7 @@
 // ==/UserScript==
 
 // @更新日志
+// v2.4.2   2020-08-11      1、新增“操作提示”开关；2、更新jquery来源。
 // v2.4.1   2020-06-28      1、修复使用“resource_id”命名时，出现重复后缀的bug。
 // v2.4     2020-05-06      1、新增wb_root_*命名参数。
 // v2.3.1   2020-04-27      1、优化图标资源加载。
@@ -184,6 +185,17 @@ class Config {
         return Config.getValue("space", () => 5000);
     }
 
+    /**
+     * 是否开启操作提示
+     * 【不推荐】直接在此修改数据，应前往【储存】中修改。
+     * 
+     * 启用后，右下角会有弹窗对操作进行反馈。
+     * @type {Boolean}[true/false]
+     */
+    static get isTip() {
+        return JSON.parse(Config.getValue("tip", () => true));
+    }
+
     /********************* ↑ 用户可配置区域 ↑ *********************/
 
     /**
@@ -219,13 +231,13 @@ class Config {
 
         let value = Config.properties[name];
 
-        // 本地map中不存在
-        if (!value) {
+        // 本地map中不存在（此处不能用‘非’，因为false会进入）
+        if (value == undefined) {
 
             value = GM_getValue(name, null);
 
-            // 储存中也不存在
-            if (!value) {
+            // 储存中也不存在（此处不能用‘非’，因为false会进入）
+            if (value == undefined) {
 
                 value = fun();
                 GM_setValue(name, value);
@@ -1264,11 +1276,15 @@ class ZipHandler {
 class Tip {
 
     static tip(text, iconName) {
-        GM_notification({
-            text: text,
-            image: GM_getResourceURL(iconName),
-            timeout: 3000,
-        });
+
+        if (Config.isTip) {
+
+            GM_notification({
+                text: text,
+                image: GM_getResourceURL(iconName),
+                timeout: 3000,
+            });
+        }
     }
 
     static info(text) {

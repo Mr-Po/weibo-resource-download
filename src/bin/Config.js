@@ -138,6 +138,17 @@ class Config {
         return Config.getValue("space", () => 5000);
     }
 
+    /**
+     * 是否开启操作提示
+     * 【不推荐】直接在此修改数据，应前往【储存】中修改。
+     * 
+     * 启用后，右下角会有弹窗对操作进行反馈。
+     * @type {Boolean}[true/false]
+     */
+    static get isTip() {
+        return JSON.parse(Config.getValue("tip", () => true));
+    }
+
     /********************* ↑ 用户可配置区域 ↑ *********************/
 
     /**
@@ -173,13 +184,13 @@ class Config {
 
         let value = Config.properties[name];
 
-        // 本地map中不存在
-        if (!value) {
+        // 本地map中不存在（此处不能用‘非’，因为false会进入）
+        if (value == undefined) {
 
             value = GM_getValue(name, null);
 
-            // 储存中也不存在
-            if (!value) {
+            // 储存中也不存在（此处不能用‘非’，因为false会进入）
+            if (value == undefined) {
 
                 value = fun();
                 GM_setValue(name, value);
