@@ -683,16 +683,15 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
         Core.log(sources);
 
         // 逐步下调清晰度
-        for (var i = sources.length - 2; i >= 0; i -= 1) {
+        for (var i = sources.length - 1; i >= 0; i -= 1) {
 
-            if (sources[i].trim().split("=")[1].trim().length > 0) {
+            if (sources[i].trim().split("=")[0] == 'quality_label_list') {
 
-                // 解码
-                var source = decodeURIComponent(decodeURIComponent(sources[i].trim()));
+                var source_lable = decodeURIComponent(decodeURIComponent(sources[i].trim()));
 
-                Core.log(source);
+                const src_list = source_lable.substring(source_lable.indexOf("=") + 1);
 
-                const src = source.substring(source.indexOf("=") + 1);
+                const src = JSON.parse(src_list)[0].url;
 
                 // 是一个链接
                 if (src.indexOf("http") == 0) {
