@@ -188,20 +188,65 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
 
         Core.log(sources);
 
-        // 逐步下调清晰度
-        for (var i = sources.length - 2; i >= 0; i -= 1) {
+        // 尝试从 quality_label_list 中，获取视频地址
+        const sources_filter =
+            sources.filter(it => it.trim().indexOf("quality_label_list") == 0);
 
-            if (sources[i].trim().split("=")[1].trim().length > 0) {
+        if (sources_filter != null && sources_filter.length > 0) {
 
-                // 解码
-                var source = decodeURIComponent(decodeURIComponent(sources[i].trim()));
+            Core.log("尝试使用：quality_label_list，进行视频地址解析...");
 
-                Core.log(source);
+            const quality_label_list = sources_filter[0].trim();
 
-                const src = source.substring(source.indexOf("=") + 1);
+            // 解码
+            const source = decodeURIComponent(quality_label_list);
+
+            const json = source.substring(source.indexOf("=") + 1);
+
+            const $urls = JSON.parse(json);
+
+            Core.log($urls);
+
+            // 逐步下调清晰度，当前用户为未登录或非vip时，1080P+的地址为空
+            for (let i = 0; i < $urls.length; i++) {
+
+                const $url = $urls[i];
+
+                const src = $url.url.trim();
 
                 // 是一个链接
                 if (src.indexOf("http") == 0) {
+
+                    Core.log(`得到一个有效链接，${$url.quality_label}：${src}`);
+
+                    return src;
+                }
+            }
+        }
+
+        console.warn("无法从quality_label_list中，解析出视频地址！");
+
+        Core.log("使用缺省方式，进行视频地址解析...");
+
+        // 逐步下调清晰度【兼容旧版，防止 quality_label_list API变动】
+        for (let i = sources.length - 2; i >= 0; i--) {
+
+            const source = sources[i].trim();
+            const index = source.indexOf("=");
+
+            const key = source.substring(0, index).trim();
+            const value = source.substring(index + 1).trim();
+
+            if (value.length > 0) {
+
+                // 解码
+                const src = decodeURIComponent(decodeURIComponent(value));
+
+                // 是一个链接
+                if (src.indexOf("http") == 0) {
+
+                    Core.log(`得到一个有效链接，${key}：${src}`);
+
                     return src;
                 }
             }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         微博 [ 图片 | 视频 ] 下载
 // @namespace    http://tampermonkey.net/
-// @version      2.4.2
+// @version      2.4.3
 // @description  下载微博(weibo.com)的图片和视频。（支持LivePhoto、短视频、动/静图(9+)，可以打包下载）
 // @author       Mr.Po
 // @match        https://weibo.com/*
@@ -31,6 +31,7 @@
 // ==/UserScript==
 
 // @更新日志
+// v2.4.3   2020-09-18      1、更新视频链接解析方式，支持1080P+(需自身是微博会员)。
 // v2.4.2   2020-08-11      1、新增“操作提示”开关；2、更新jquery来源。
 // v2.4.1   2020-06-28      1、修复使用“resource_id”命名时，出现重复后缀的bug。
 // v2.4     2020-05-06      1、新增wb_root_*命名参数。
@@ -682,19 +683,65 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
 
         Core.log(sources);
 
-        // 逐步下调清晰度
-        for (var i = sources.length - 1; i >= 0; i -= 1) {
+        // 尝试从 quality_label_list 中，获取视频地址
+        const sources_filter =
+            sources.filter(it => it.trim().indexOf("quality_label_list") == 0);
 
-            if (sources[i].trim().split("=")[0] == 'quality_label_list') {
+        if (sources_filter != null && sources_filter.length > 0) {
 
-                var source_lable = decodeURIComponent(decodeURIComponent(sources[i].trim()));
+            Core.log("尝试使用：quality_label_list，进行视频地址解析...");
 
-                const src_list = source_lable.substring(source_lable.indexOf("=") + 1);
+            const quality_label_list = sources_filter[0].trim();
 
-                const src = JSON.parse(src_list)[0].url;
+            // 解码
+            const source = decodeURIComponent(quality_label_list);
+
+            const json = source.substring(source.indexOf("=") + 1);
+
+            const $urls = JSON.parse(json);
+
+            Core.log($urls);
+
+            // 逐步下调清晰度，当前用户为未登录或非vip时，1080P+的地址为空
+            for (let i = 0; i < $urls.length; i++) {
+
+                const $url = $urls[i];
+
+                const src = $url.url.trim();
 
                 // 是一个链接
                 if (src.indexOf("http") == 0) {
+
+                    Core.log(`得到一个有效链接，${$url.quality_label}：${src}`);
+
+                    return src;
+                }
+            }
+        }
+
+        console.warn("无法从quality_label_list中，解析出视频地址！");
+
+        Core.log("使用缺省方式，进行视频地址解析...");
+
+        // 逐步下调清晰度【兼容旧版，防止 quality_label_list API变动】
+        for (let i = sources.length - 2; i >= 0; i--) {
+
+            const source = sources[i].trim();
+            const index = source.indexOf("=");
+
+            const key = source.substring(0, index).trim();
+            const value = source.substring(index + 1).trim();
+
+            if (value.length > 0) {
+
+                // 解码
+                const src = decodeURIComponent(decodeURIComponent(value));
+
+                // 是一个链接
+                if (src.indexOf("http") == 0) {
+
+                    Core.log(`得到一个有效链接，${key}：${src}`);
+
                     return src;
                 }
             }
