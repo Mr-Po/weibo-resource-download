@@ -178,7 +178,7 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
         return url.replace("\/", "_");
     },
     getProgressContainer: $sub => $sub.parents("div.WB_feed_detail").find("div.WB_info").first(),
-    getVideoBox: $ul => $ul.parents(".WB_feed_detail").find(".WB_video,.WB_video_a,.li_story"),
+    getVideoBox: $ul => $ul.parents(".WB_feed_detail").find(".WB_video,.WB_video_a,.li_story,.WB_video_h5_v2 .WB_feed_spec_pic"),
     geiVideoSrc: $box => {
 
         const video_sources = $box.attr("video-sources");
