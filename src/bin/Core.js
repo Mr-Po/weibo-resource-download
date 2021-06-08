@@ -172,16 +172,47 @@ class Core {
     /**
      * 得到后缀
      * @param  {字符串} path 路径
+     * @param  {字符串}    media_type 媒体类型
+     * 
      * @return {字符串}     后缀（含.）
      */
-    static getPathPostfix(path) {
+    static getPathPostfix(path, media_type) {
 
-        const postfix = path.substring(path.lastIndexOf("."));
+        let postfix = path.substring(path.lastIndexOf(".") + 1).toLowerCase();
 
         Core.log(`截得后缀为：${postfix}`);
 
-        return postfix;
+        // 媒体类型为图片
+        if (media_type == Config.mediaType.picture) {
+
+            const pics = ["jpg", "jpeg", "gif", "png", "bmp", "tif"];
+
+            // 此格式的后缀不是一个常见格式，可能是解析错误导致
+            // 也可能就是一个冷门格式，但此格式若使用GM进行下载，则会受到限制
+            if ($.inArray(postfix, pics) == -1) {
+
+                console.warn(`不能识别的【${media_type}】格式：${postfix}，Ta即将被覆盖为${pics[0]}。`);
+
+                postfix = pics[0];
+
+            }
+
+        } else if (media_type == Config.mediaType.video ||
+            media_type == Config.mediaType.livePhoto) { // 媒体类型为视频
+
+            const vids = ["mp4", "wmv", "avi", "ts", "mov"];
+
+            if ($.inArray(postfix, vids) == -1) {
+
+                console.warn(`不能识别的【${media_type}】格式：${postfix}，Ta即将被覆盖为${vids[0]}。`);
+
+                postfix = vids[0];
+            }
+        }
+
+        return `.${postfix}`;
     }
+
 
     /**
      * 得到资源名称
@@ -222,7 +253,7 @@ class Core {
 
         const no = index;
 
-        const postfix = Core.getPathPostfix(src);
+        const postfix = Core.getPathPostfix(src, media_type);
 
         const name = Config.getResourceName(
             wb_user_name, wb_user_id, wb_id, wb_url,

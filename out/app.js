@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         微博 [ 图片 | 视频 ] 下载
 // @namespace    http://tampermonkey.net/
-// @version      2.4.4
+// @version      2.4.5
 // @description  下载微博(weibo.com)的图片和视频。（支持LivePhoto、短视频、动/静图(9+)，可以打包下载）
 // @author       Mr.Po
 // @match        https://weibo.com/*
@@ -19,6 +19,7 @@
 // @resource iconZip https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/out/media/zip.png
 // @connect      sinaimg.cn
 // @connect      miaopai.com
+// @connect      video.qq.com
 // @connect      youku.com
 // @connect      weibo.com
 // @grant        GM_notification
@@ -31,6 +32,7 @@
 // ==/UserScript==
 
 // @更新日志
+// v2.4.5   2021-06-08      1、修复来自腾讯的视频，无法解析的bug。
 // v2.4.4   2021-04-05      1、修复某些视频无法解析的bug。
 // v2.4.3   2020-09-18      1、更新视频链接解析方式，支持1080P+(需自身是微博会员)。
 // v2.4.2   2020-08-11      1、新增“操作提示”开关；2、更新jquery来源。
@@ -697,34 +699,38 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
             // 解码
             const source = decodeURIComponent(quality_label_list);
 
-            const json = source.substring(source.indexOf("=") + 1);
+            const json = source.substring(source.indexOf("=") + 1).trim();
 
-            const $urls = JSON.parse(json);
+            // 存在质量列表的值
+            if (json.length > 0) {
 
-            Core.log($urls);
+                const $urls = JSON.parse(json);
 
-            // 逐步下调清晰度，当前用户为未登录或非vip时，1080P+的地址为空
-            for (let i = 0; i < $urls.length; i++) {
+                Core.log($urls);
 
-                const $url = $urls[i];
+                // 逐步下调清晰度，当前用户为未登录或非vip时，1080P+的地址为空
+                for (let i = 0; i < $urls.length; i++) {
 
-                const src = $url.url.trim();
+                    const $url = $urls[i];
 
-                // 是一个链接
-                if (src.indexOf("http") == 0) {
+                    const src = $url.url.trim();
 
-                    Core.log(`得到一个有效链接，${$url.quality_label}：${src}`);
+                    // 是一个链接
+                    if (src.indexOf("http") == 0) {
 
-                    return src;
+                        Core.log(`得到一个有效链接，${$url.quality_label}：${src}`);
+
+                        return src;
+                    }
                 }
-            }
-        }
 
-        console.warn("无法从quality_label_list中，解析出视频地址！");
+            } else Core.log("仅存在quality_label_list的key，却无value！");
 
-        Core.log("使用缺省方式，进行视频地址解析...");
+        } else console.log("无法找到quality_label_list！");
 
-        // 逐步下调清晰度【兼容旧版，防止 quality_label_list API变动】
+        Core.log("即将使用缺省方式，进行视频地址解析...");
+
+        // 逐步下调清晰度【兼容旧版，防止 quality_label_list API变动，或quality_label_list的值不存在】
         for (let i = sources.length - 2; i >= 0; i--) {
 
             const source = sources[i].trim();
@@ -1520,16 +1526,47 @@ class Core {
     /**
      * 得到后缀
      * @param  {字符串} path 路径
+     * @param  {字符串}    media_type 媒体类型
+     * 
      * @return {字符串}     后缀（含.）
      */
-    static getPathPostfix(path) {
+    static getPathPostfix(path, media_type) {
 
-        const postfix = path.substring(path.lastIndexOf("."));
+        let postfix = path.substring(path.lastIndexOf(".") + 1).toLowerCase();
 
         Core.log(`截得后缀为：${postfix}`);
 
-        return postfix;
+        // 媒体类型为图片
+        if (media_type == Config.mediaType.picture) {
+
+            const pics = ["jpg", "jpeg", "gif", "png", "bmp", "tif"];
+
+            // 此格式的后缀不是一个常见格式，可能是解析错误导致
+            // 也可能就是一个冷门格式，但此格式若使用GM进行下载，则会受到限制
+            if ($.inArray(postfix, pics) == -1) {
+
+                console.warn(`不能识别的【${media_type}】格式：${postfix}，Ta即将被覆盖为${pics[0]}。`);
+
+                postfix = pics[0];
+
+            }
+
+        } else if (media_type == Config.mediaType.video ||
+            media_type == Config.mediaType.livePhoto) { // 媒体类型为视频
+
+            const vids = ["mp4", "wmv", "avi", "ts", "mov"];
+
+            if ($.inArray(postfix, vids) == -1) {
+
+                console.warn(`不能识别的【${media_type}】格式：${postfix}，Ta即将被覆盖为${vids[0]}。`);
+
+                postfix = vids[0];
+            }
+        }
+
+        return `.${postfix}`;
     }
+
 
     /**
      * 得到资源名称
@@ -1570,7 +1607,7 @@ class Core {
 
         const no = index;
 
-        const postfix = Core.getPathPostfix(src);
+        const postfix = Core.getPathPostfix(src, media_type);
 
         const name = Config.getResourceName(
             wb_user_name, wb_user_id, wb_id, wb_url,

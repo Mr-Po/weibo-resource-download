@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         微博 [ 图片 | 视频 ] 下载
 // @namespace    http://tampermonkey.net/
-// @version      2.4.4
+// @version      2.4.5
 // @description  下载微博(weibo.com)的图片和视频。（支持LivePhoto、短视频、动/静图(9+)，可以打包下载）
 // @author       Mr.Po
 // @match        https://weibo.com/*
@@ -19,6 +19,7 @@
 // @resource iconZip https://cdn.jsdelivr.net/gh/Mr-Po/weibo-resource-download/out/media/zip.png
 // @connect      sinaimg.cn
 // @connect      miaopai.com
+// @connect      video.qq.com
 // @connect      youku.com
 // @connect      weibo.com
 // @grant        GM_notification
@@ -31,6 +32,7 @@
 // ==/UserScript==
 
 // @更新日志
+// v2.4.5   2021-06-08      1、修复来自腾讯的视频，无法解析的bug。
 // v2.4.4   2021-04-05      1、修复某些视频无法解析的bug。
 // v2.4.3   2020-09-18      1、更新视频链接解析方式，支持1080P+(需自身是微博会员)。
 // v2.4.2   2020-08-11      1、新增“操作提示”开关；2、更新jquery来源。

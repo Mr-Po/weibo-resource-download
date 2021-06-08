@@ -201,34 +201,38 @@ Interface.impl(MyWeiBoResolver, WeiBoResolver, {
             // 解码
             const source = decodeURIComponent(quality_label_list);
 
-            const json = source.substring(source.indexOf("=") + 1);
+            const json = source.substring(source.indexOf("=") + 1).trim();
 
-            const $urls = JSON.parse(json);
+            // 存在质量列表的值
+            if (json.length > 0) {
 
-            Core.log($urls);
+                const $urls = JSON.parse(json);
 
-            // 逐步下调清晰度，当前用户为未登录或非vip时，1080P+的地址为空
-            for (let i = 0; i < $urls.length; i++) {
+                Core.log($urls);
 
-                const $url = $urls[i];
+                // 逐步下调清晰度，当前用户为未登录或非vip时，1080P+的地址为空
+                for (let i = 0; i < $urls.length; i++) {
 
-                const src = $url.url.trim();
+                    const $url = $urls[i];
 
-                // 是一个链接
-                if (src.indexOf("http") == 0) {
+                    const src = $url.url.trim();
 
-                    Core.log(`得到一个有效链接，${$url.quality_label}：${src}`);
+                    // 是一个链接
+                    if (src.indexOf("http") == 0) {
 
-                    return src;
+                        Core.log(`得到一个有效链接，${$url.quality_label}：${src}`);
+
+                        return src;
+                    }
                 }
-            }
-        }
 
-        console.warn("无法从quality_label_list中，解析出视频地址！");
+            } else Core.log("仅存在quality_label_list的key，却无value！");
 
-        Core.log("使用缺省方式，进行视频地址解析...");
+        } else console.log("无法找到quality_label_list！");
 
-        // 逐步下调清晰度【兼容旧版，防止 quality_label_list API变动】
+        Core.log("即将使用缺省方式，进行视频地址解析...");
+
+        // 逐步下调清晰度【兼容旧版，防止 quality_label_list API变动，或quality_label_list的值不存在】
         for (let i = sources.length - 2; i >= 0; i--) {
 
             const source = sources[i].trim();
