@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         微博 [ 图片 | 视频 ] 下载
 // @namespace    http://tampermonkey.net/
-// @version      2.4.5
+// @version      2.4.6
 // @description  下载微博(weibo.com)的图片和视频。（支持LivePhoto、短视频、动/静图(9+)，可以打包下载）
 // @author       Mr.Po
 // @match        https://weibo.com/*
@@ -32,6 +32,7 @@
 // ==/UserScript==
 
 // @更新日志
+// v2.4.6   2021-06-25      1、更新支持广告类视频解析。
 // v2.4.5   2021-06-08      1、修复来自腾讯的视频，无法解析的bug。
 // v2.4.4   2021-04-05      1、修复某些视频无法解析的bug。
 // v2.4.3   2020-09-18      1、更新视频链接解析方式，支持1080P+(需自身是微博会员)。
@@ -1072,6 +1073,11 @@ class VideoHandler {
 
                 $link = VideoHandler.getWeiboStoryLink($box);
 
+            } else if (type === "adFeedVideo") { // 广告视频（无清晰度选择）
+
+
+                $link = VideoHandler.getAdVideoLink($box);
+
             } else {
 
                 console.warn(`未知的类型：${type}`);
@@ -1096,8 +1102,8 @@ class VideoHandler {
             Core.putButton($ul, "视频解析失败", null);
 
         } finally {
-            
-            Core.removeButton($ul,$button);
+
+            Core.removeButton($ul, $button);
         }
     }
 
@@ -1140,9 +1146,26 @@ class VideoHandler {
     }
 
     /**
+     * 得到广告视频Link
+     * @param  {$标签对象}  $box 视频box
+     * 
+     * @return {Link}      链接对象
+     */
+    static getAdVideoLink($box) {
+
+        const src = SearchWeiBoResolver.geiVideoSrc($box);
+
+        name = Core.getResourceName($box, src.split("?")[0], 0, Config.mediaType.video);
+
+        Core.log(`download：${name}=${src}`);
+
+        return new Link(name, src);
+    }
+
+    /**
      * 得到酷燃视频Link
      * 
-     * @param  {$标签对象} $box 视频box
+     * @param  {$标签对象}  $box 视频box
      * 
      * @return {Link}      链接对象
      */

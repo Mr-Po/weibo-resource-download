@@ -40,6 +40,11 @@ class VideoHandler {
 
                 $link = VideoHandler.getWeiboStoryLink($box);
 
+            } else if (type === "adFeedVideo") { // 广告视频（无清晰度选择）
+
+
+                $link = VideoHandler.getAdVideoLink($box);
+
             } else {
 
                 console.warn(`未知的类型：${type}`);
@@ -64,8 +69,8 @@ class VideoHandler {
             Core.putButton($ul, "视频解析失败", null);
 
         } finally {
-            
-            Core.removeButton($ul,$button);
+
+            Core.removeButton($ul, $button);
         }
     }
 
@@ -108,9 +113,26 @@ class VideoHandler {
     }
 
     /**
+     * 得到广告视频Link
+     * @param  {$标签对象}  $box 视频box
+     * 
+     * @return {Link}      链接对象
+     */
+    static getAdVideoLink($box) {
+
+        const src = SearchWeiBoResolver.geiVideoSrc($box);
+
+        name = Core.getResourceName($box, src.split("?")[0], 0, Config.mediaType.video);
+
+        Core.log(`download：${name}=${src}`);
+
+        return new Link(name, src);
+    }
+
+    /**
      * 得到酷燃视频Link
      * 
-     * @param  {$标签对象} $box 视频box
+     * @param  {$标签对象}  $box 视频box
      * 
      * @return {Link}      链接对象
      */
